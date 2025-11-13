@@ -1,0 +1,13 @@
+<h2 class="font-bold text-gray-600 text-2xl">Categories</h2>
+
+<div class="courses-section">
+  <div class="course-grid">
+    <% categories.forEach(category => { %>
+      <%- include('../components/cards', {
+          imgad: category.image,        // Pass the image URL directly
+          linkHere: `/courses/category/${category.slug}`, // Dynamic category link
+          title: category.name          // Category name
+      }) %>
+    <% }) %>
+  </div>
+</div>

@@ -1,0 +1,349 @@
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">User Management</h1>
+      <button 
+        onclick="openCreateUserModal()" 
+        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition">
+        ➕ Add New User
+      </button>
+    </div>
+  
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-gray-500 text-sm font-medium">Total Users</h3>
+        <p class="text-3xl font-bold text-gray-800 mt-2"><%= totalUsers %></p>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-gray-500 text-sm font-medium">Verified</h3>
+        <p class="text-3xl font-bold text-green-600 mt-2" id="verifiedCount">-</p>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-gray-500 text-sm font-medium">Unverified</h3>
+        <p class="text-3xl font-bold text-orange-600 mt-2" id="unverifiedCount">-</p>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-gray-500 text-sm font-medium">Admins</h3>
+        <p class="text-3xl font-bold text-purple-600 mt-2" id="adminCount">-</p>
+      </div>
+    </div>
+  
+    <!-- Filters & Search -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <input 
+          type="text" 
+          id="searchInput"
+          placeholder="🔍 Search by name or email..." 
+          class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onkeyup="handleSearch()"
+        />
+        <select 
+          id="roleFilter" 
+          onchange="applyFilters()"
+          class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">All Roles</option>
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+        <select 
+          id="verifiedFilter"
+          onchange="applyFilters()"
+          class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="">All Status</option>
+          <option value="true">Verified</option>
+          <option value="false">Unverified</option>
+        </select>
+        <button 
+          onclick="clearFilters()"
+          class="border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-50 transition">
+          Clear Filters
+        </button>
+      </div>
+    </div>
+  
+    <!-- Users Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% if (users && users.length > 0) { %>
+            <% users.forEach(function(userItem) { %>
+              <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span class="text-blue-600 font-semibold"><%= userItem.name.charAt(0).toUpperCase() %></span>
+                    </div>
+                    <div class="ml-4">
+                      <div class="text-sm font-medium text-gray-900"><%= userItem.name %></div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900"><%= userItem.email %></div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <%= userItem.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800' %>">
+                    <%= userItem.role %>
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <%= userItem.isVerified ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800' %>">
+                    <%= userItem.isVerified ? '✓ Verified' : '✗ Unverified' %>
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <%= new Date(userItem.createdAt).toLocaleDateString() %>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                  <button onclick="editUser('<%= userItem._id %>')" class="text-blue-600 hover:text-blue-900">✏️ Edit</button>
+                  <button onclick="toggleVerification('<%= userItem._id %>', <%= userItem.isVerified %>)" class="text-green-600 hover:text-green-900">
+                    <%= userItem.isVerified ? '✗' : '✓' %> Verify
+                  </button>
+                  <button onclick="deleteUser('<%= userItem._id %>', '<%= userItem.name %>')" class="text-red-600 hover:text-red-900">🗑️ Delete</button>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                No users found
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  
+    <!-- Pagination -->
+    <% if (totalPages > 1) { %>
+      <div class="mt-6 flex justify-center items-center space-x-2">
+        <% if (currentPage > 1) { %>
+          <a href="?page=<%= currentPage - 1 %>" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Previous</a>
+        <% } %>
+        
+        <% for (let i = 1; i <= totalPages; i++) { %>
+          <a href="?page=<%= i %>" class="px-4 py-2 <%= currentPage === i ? 'bg-blue-600 text-white' : 'border border-gray-300 hover:bg-gray-50' %> rounded-lg">
+            <%= i %>
+          </a>
+        <% } %>
+        
+        <% if (currentPage < totalPages) { %>
+          <a href="?page=<%= currentPage + 1 %>" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Next</a>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+  
+  <!-- Create/Edit User Modal -->
+  <div id="userModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+      <h2 id="modalTitle" class="text-2xl font-bold mb-6">Add New User</h2>
+      <form id="userForm">
+        <input type="hidden" id="userId" />
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">Name</label>
+          <input type="text" id="userName" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+          <input type="email" id="userEmail" required class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+        
+        <div class="mb-4" id="passwordField">
+          <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+          <input type="password" id="userPassword" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <p class="text-xs text-gray-500 mt-1">Leave blank to keep current password (when editing)</p>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 text-sm font-bold mb-2">Role</label>
+          <select id="userRole" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        
+        <div class="mb-6">
+          <label class="flex items-center">
+            <input type="checkbox" id="userVerified" class="mr-2" />
+            <span class="text-gray-700 text-sm">Verified Account</span>
+          </label>
+        </div>
+        
+        <div class="flex justify-end space-x-3">
+          <button type="button" onclick="closeUserModal()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <script>
+    // Load statistics on page load
+    document.addEventListener('DOMContentLoaded', loadStatistics);
+  
+    async function loadStatistics() {
+      try {
+        const res = await fetch('/admin/users/statistics');
+        const data = await res.json();
+        
+        if (data.success) {
+          document.getElementById('verifiedCount').textContent = data.statistics.verifiedUsers;
+          document.getElementById('unverifiedCount').textContent = data.statistics.unverifiedUsers;
+          document.getElementById('adminCount').textContent = data.statistics.adminUsers;
+        }
+      } catch (error) {
+        console.error('Error loading statistics:', error);
+      }
+    }
+  
+    function openCreateUserModal() {
+      document.getElementById('modalTitle').textContent = 'Add New User';
+      document.getElementById('userForm').reset();
+      document.getElementById('userId').value = '';
+      document.getElementById('userPassword').required = true;
+      document.getElementById('userModal').classList.remove('hidden');
+    }
+  
+    function closeUserModal() {
+      document.getElementById('userModal').classList.add('hidden');
+    }
+  
+    async function editUser(userId) {
+      try {
+        const res = await fetch(`/admin/users/${userId}`);
+        const data = await res.json();
+        
+        if (data.success) {
+          document.getElementById('modalTitle').textContent = 'Edit User';
+          document.getElementById('userId').value = data.user._id;
+          document.getElementById('userName').value = data.user.name;
+          document.getElementById('userEmail').value = data.user.email;
+          document.getElementById('userRole').value = data.user.role;
+          document.getElementById('userVerified').checked = data.user.isVerified;
+          document.getElementById('userPassword').required = false;
+          document.getElementById('userModal').classList.remove('hidden');
+        }
+      } catch (error) {
+        alert('Error loading user data');
+      }
+    }
+  
+    document.getElementById('userForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const userId = document.getElementById('userId').value;
+      const userData = {
+        name: document.getElementById('userName').value,
+        email: document.getElementById('userEmail').value,
+        role: document.getElementById('userRole').value,
+        isVerified: document.getElementById('userVerified').checked,
+      };
+      
+      const password = document.getElementById('userPassword').value;
+      if (password) userData.password = password;
+      
+      try {
+        const url = userId ? `/admin/users/${userId}` : '/admin/users';
+        const method = userId ? 'PUT' : 'POST';
+        
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userData)
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          alert(data.message);
+          location.reload();
+        } else {
+          alert(data.message || 'Error saving user');
+        }
+      } catch (error) {
+        alert('Server error');
+      }
+    });
+  
+    async function toggleVerification(userId, currentStatus) {
+      if (!confirm(`${currentStatus ? 'Unverify' : 'Verify'} this user?`)) return;
+      
+      try {
+        const res = await fetch(`/admin/users/${userId}/verify`, {
+          method: 'PATCH'
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          alert(data.message);
+          location.reload();
+        } else {
+          alert(data.message);
+        }
+      } catch (error) {
+        alert('Server error');
+      }
+    }
+  
+    async function deleteUser(userId, userName) {
+      if (!confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) return;
+      
+      try {
+        const res = await fetch(`/admin/users/${userId}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          alert(data.message);
+          location.reload();
+        } else {
+          alert(data.message);
+        }
+      } catch (error) {
+        alert('Server error');
+      }
+    }
+  
+    let searchTimeout;
+    function handleSearch() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        applyFilters();
+      }, 500);
+    }
+  
+    function applyFilters() {
+      const search = document.getElementById('searchInput').value;
+      const role = document.getElementById('roleFilter').value;
+      const verified = document.getElementById('verifiedFilter').value;
+      
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (role) params.append('role', role);
+      if (verified) params.append('verified', verified);
+      
+      window.location.href = '/admin/users?' + params.toString();
+    }
+  
+    function clearFilters() {
+      window.location.href = '/admin/users';
+    }
+  </script>

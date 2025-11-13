@@ -1,0 +1,17 @@
+<h2 class="font-bold text-gray-600 text-2xl"><%= category.name %></h2>
+
+<div class="courses-section">
+    <div class="course-grid">
+      <% if (products.length === 0) { %>
+        <p class="text-gray-500">No products found in this category.</p>
+      <% } else { %>
+        <% products.forEach(product => { %>
+          <%- include('../components/cards', 
+          {       imgad: '/' + product.image, 
+          linkHere: `/courses/${category.slug}/${product.slug}`, 
+          title: product.name }
+          ) %>
+        <% }) %>
+      <% } %>
+    </div>
+</div>

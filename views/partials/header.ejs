@@ -1,0 +1,62 @@
+<header>
+    <div class="header-container">
+        <a href="/" class="logo">LearnHub</a>
+
+        <!-- Hamburger Icon (visible on mobile) -->
+        <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <!-- Navigation Links (Collapsible part for mobile) -->
+        <nav class="nav-links" id="mobile-nav">
+            <div class="dropdown">
+                <button class="dropdown-btn" onclick="toggleCategoriesDropdown()">
+                    CATEGORIES <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-content" id="categoriesDropdown">
+                    <a href="#web">Web Development</a>
+                    <a href="#mobile">Mobile Development</a>
+                    <a href="#data">Data Science</a>
+                    <a href="#design">UI/UX Design</a>
+                    <a href="#business">Business</a>
+                    <a href="#marketing">Marketing</a>
+                </div>
+            </div>
+            <a href="/about" class="nav-link">ABOUT</a>
+            <a href="/courses" class="nav-link">EXAM TIPS</a>
+            <a href="/contact" class="nav-link">CONTACT US</a>
+        </nav>
+        
+        <!-- Header Actions (Visible on all screens) -->
+        <div class="header-actions">
+            <div class="search-bar">
+                <input type="text" placeholder="Search courses...">
+                <i class="fas fa-search search-icon"></i> 
+            </div>
+            
+            <div class="profile-dropdown">
+                <div class="user-profile" onclick="toggleProfileDropdown()">
+                    <img src="https://i.pinimg.com/736x/03/eb/d6/03ebd625cc0b9d636256ecc44c0ea324.jpg" alt="User Profile" class="user-icon">
+                </div>
+                <div class="profile-dropdown-content" id="profileMenu">
+                    <div class="profile-header-info">
+                        <% if (user) { %>
+                            <strong><%= user.name %></strong>
+                            <span><%= user.email %></span>
+                        <% } else { %>
+                            <strong>Guest</strong>
+                            <span>Not logged in</span>
+                        <% } %>
+                    </div>
+                    <hr>
+                    <% if (user) { %>
+                        <a href="/logout" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    <% } else { %>
+                        <a href="/login" class="logout"><i class="fas fa-sign-in-alt"></i> Login</a>
+                    <% } %>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</header>

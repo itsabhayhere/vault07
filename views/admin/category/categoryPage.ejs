@@ -1,0 +1,64 @@
+
+<div class="container mx-auto py-6">
+  <h1 class="text-2xl font-bold mb-4">Category List</h1>
+
+  <!-- Add Category Button -->
+  <div class="mb-4">
+    <a href="/admin/category/create" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+      + Add Category
+    </a>
+  </div>
+
+  <!-- Categories Table -->
+  <table class="min-w-full border border-gray-200">
+    <thead class="bg-gray-100">
+      <tr>
+        <th class="py-2 px-4 border">#</th>
+        <th class="py-2 px-4 border">Image</th>
+        <th class="py-2 px-4 border">Name</th>
+        <th class="py-2 px-4 border">Slug</th>
+        <th class="py-2 px-4 border">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (categories.length === 0) { %>
+        <tr>
+          <td colspan="5" class="text-center py-4">No categories found</td>
+        </tr>
+      <% } else { %>
+        <% categories.forEach((category, index) => { %>
+          <tr class="<%= index % 2 === 0 ? 'bg-white' : 'bg-gray-50' %>">
+            <td class="py-2 px-4 border"><%= index + 1 + (currentPage - 1) * 10 %></td>
+            <td class="py-2 px-4 border">
+              <% if(category.image){ %>
+                <img src="/<%= category.image %>" alt="<%= category.name %>" class="w-16 h-16 object-cover rounded">
+              <% } else { %>
+                N/A
+              <% } %>
+            </td>
+            <td class="py-2 px-4 border"><%= category.name %></td>
+            <td class="py-2 px-4 border"><%= category.slug %></td>
+            <td class="py-2 px-4 border">
+              <a href="/admin/category/edit/<%= category._id %>" class="text-blue-600 hover:underline mr-2">Edit</a>
+              <form action="/admin/category/delete/<%= category._id %>?_method=DELETE" method="POST" class="inline">
+                <button type="submit" class="text-red-600 hover:underline" onclick="return confirm('Are you sure?')">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      <% } %>
+    </tbody>
+  </table>
+
+  <!-- Pagination -->
+  <% if(totalPages > 1){ %>
+    <div class="mt-4 flex justify-center space-x-2">
+      <% for(let i = 1; i <= totalPages; i++){ %>
+        <a href="?page=<%= i %>" class="px-3 py-1 border rounded <%= i === currentPage ? 'bg-blue-500 text-white' : 'bg-white text-blue-500' %>">
+          <%= i %>
+        </a>
+      <% } %>
+    </div>
+  <% } %>
+</div>
+

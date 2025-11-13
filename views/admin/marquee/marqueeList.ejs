@@ -1,0 +1,154 @@
+<div class="max-w-5xl mx-auto py-8">
+  <!-- Page Title -->
+  <h1 class="text-3xl font-bold text-gray-800 mb-6">Manage Marquees</h1>
+
+  <!-- Flash / Success Message -->
+  <% if (message) { %>
+    <div class="bg-green-100 border border-green-300 text-green-700 px-4 py-3 rounded mb-4">
+      <%= message %>
+    </div>
+  <% } %>
+
+  <!-- Create Marquee Form -->
+  <form action="/admin/marquee/create" method="POST" class="bg-white p-6 rounded-lg shadow-md mb-8">
+    <h2 class="text-xl font-semibold mb-4">Add New Marquee</h2>
+
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <label for="text" class="block text-sm font-medium text-gray-700 mb-1">Marquee Text</label>
+        <input type="text" name="text" id="text"
+               class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+               placeholder="Enter marquee text" required>
+      </div>
+
+      <div>
+        <label for="link" class="block text-sm font-medium text-gray-700 mb-1">Link URL</label>
+        <input type="url" name="link" id="link"
+               class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+               placeholder="https://example.com" required>
+      </div>
+
+      <div class="flex items-center gap-2 mt-2">
+        <input type="checkbox" id="isActive" name="isActive" value="true"
+               class="w-4 h-4 text-indigo-600 border-gray-300 rounded">
+        <label for="isActive" class="text-gray-700 text-sm">Active</label>
+      </div>
+    </div>
+
+    <button type="submit"
+            class="mt-4 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
+      Save Marquee
+    </button>
+  </form>
+
+  <!-- Marquee List -->
+  <div class="bg-white p-6 rounded-lg shadow-md">
+    <h2 class="text-xl font-semibold mb-4">Existing Marquees</h2>
+
+    <% if (marquees && marquees.length > 0) { %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-left border border-gray-200 rounded-lg">
+          <thead class="bg-gray-100 text-gray-700">
+            <tr>
+              <th class="py-3 px-4 border-b">Text</th>
+              <th class="py-3 px-4 border-b">Link</th>
+              <th class="py-3 px-4 border-b text-center">Active</th>
+              <th class="py-3 px-4 border-b text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% marquees.forEach(m => { %>
+              <tr class="border-b hover:bg-gray-50">
+                <td class="py-3 px-4"><%= m.text %></td>
+                <td class="py-3 px-4 text-indigo-600">
+                  <a href="<%= m.link %>" target="_blank" class="hover:underline"><%= m.link %></a>
+                </td>
+                <td class="py-3 px-4 text-center font-medium">
+                  <%= m.isActive ? 'Yes' : 'No' %>
+                </td>
+                <td class="py-3 px-4 text-center space-x-3">
+                  <button
+                    onclick="openEditModal('<%= m._id %>', '<%= m.text %>', '<%= m.link %>', <%= m.isActive %>)"
+                    class="text-blue-600 hover:text-blue-800 font-medium">
+                    Edit
+                  </button>
+
+                  <form action="/admin/marquee/delete/<%= m._id %>?_method=DELETE" method="POST" class="inline">
+                    <button type="submit" onclick="return confirm('Are you sure?')"
+                            class="text-red-600 hover:text-red-800 font-medium">
+                      Delete
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <p class="text-gray-600 text-center py-6">No marquees found.</p>
+    <% } %>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg w-full max-w-md p-6 shadow-lg relative">
+    <h2 class="text-xl font-semibold mb-4 text-gray-800">Edit Marquee</h2>
+
+    <form id="editForm" method="POST">
+      <div class="mb-3">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Marquee Text</label>
+        <input type="text" name="text" id="editText"
+               class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+               required>
+      </div>
+
+      <div class="mb-3">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Link URL</label>
+        <input type="url" name="link" id="editLink"
+               class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500"
+               required>
+      </div>
+
+      <div class="flex items-center gap-2 mb-4">
+        <input type="checkbox" name="isActive" id="editIsActive" value="true"
+               class="w-4 h-4 text-indigo-600 border-gray-300 rounded">
+        <label for="editIsActive" class="text-gray-700 text-sm">Active</label>
+      </div>
+
+      <div class="flex justify-end gap-3">
+        <button type="button" onclick="closeEditModal()"
+                class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">
+          Cancel
+        </button>
+        <button type="submit"
+                class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Script -->
+<script>
+  function openEditModal(id, text, link, isActive) {
+    document.getElementById('editModal').classList.remove('hidden');
+    document.getElementById('editText').value = text;
+    document.getElementById('editLink').value = link;
+    document.getElementById('editIsActive').checked = isActive;
+
+    document.getElementById('editForm').action = `/admin/marquee/update/${id}?_method=PUT`;
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').classList.add('hidden');
+  }
+
+  // Close modal on outside click
+  window.addEventListener('click', function(e) {
+    const modal = document.getElementById('editModal');
+    if (e.target === modal) closeEditModal();
+  });
+</script>

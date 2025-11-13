@@ -1,0 +1,10 @@
+
+
+<div class="h-[90vh] overflow-y-auto flex flex-col gap-6 p-4 scroll-smooth">
+    
+
+  <% posts.forEach(post => { %>
+    <%- include('../components/blogCard', { post: post }) %>
+  <% }) %>
+  </div>
+  

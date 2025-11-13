@@ -1,0 +1,190 @@
+<div class="flex justify-between items-center mb-6">
+  <h1 class="text-3xl font-semibold text-gray-800">All Blog Posts</h1>
+  <a href="/api/admin/posts/create" class="px-4 py-2 bg-indigo-600 text-white rounded-md shadow hover:bg-indigo-700">
+    + Create New Blog
+  </a>
+</div>
+
+<!-- Table of posts -->
+<div class="overflow-x-auto bg-white shadow-md rounded-lg">
+  <table class="min-w-full table-auto">
+    <thead class="bg-gray-100 text-gray-700 uppercase text-sm">
+      <tr>
+        <th class="py-3 px-4 border-b">Title</th>
+        <th class="py-3 px-4 border-b">Status</th>
+        <th class="py-3 px-4 border-b">PDF</th>
+        <th class="py-3 px-4 border-b">Date</th>
+        <th class="py-3 px-4 border-b">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="postTableBody" class="text-gray-800 text-sm">
+      <% posts.forEach(post => { %>
+        <tr class="border-b hover:bg-gray-50" id="postRow-<%= post._id %>">
+          <td class="py-2 px-4">
+            <a href="/api/blog/<%= post.slug %>" target="_blank" class="text-indigo-600 hover:underline font-medium">
+              <%= post.title %>
+            </a>
+          </td>
+          <td class="py-2 px-4 capitalize"><%= post.status %></td>
+          <td class="py-2 px-4">
+            <% if (post.pdf) { %>
+              <a href="<%= post.pdf %>" target="_blank" class="text-blue-600 hover:underline">Download</a>
+            <% } else { %>
+              <span class="text-gray-400 italic">No PDF</span>
+            <% } %>
+          </td>
+          <td class="py-2 px-4"><%= new Date(post.createdAt).toLocaleDateString() %></td>
+          <td class="py-2 px-4 flex gap-3 justify-center">
+            <button
+              class="text-indigo-600 hover:text-indigo-800 font-medium edit-btn"
+              data-id="<%= post._id %>"
+              data-title="<%= post.title %>"
+              data-status="<%= post.status %>"
+              data-content="<%= post.content %>"
+              data-pdf="<%= post.pdf || '' %>"
+            >
+              Edit
+            </button>
+            <button
+              class="text-red-600 hover:text-red-800 font-medium delete-btn"
+              data-id="<%= post._id %>"
+            >
+              Delete
+            </button>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative">
+    <h2 class="text-2xl font-semibold mb-5 text-gray-800">Edit Blog</h2>
+
+    <form id="editPostForm" enctype="multipart/form-data" class="space-y-4">
+      <input type="hidden" id="editPostId" name="id" />
+
+      <div>
+        <label for="editTitle" class="block text-gray-700 font-medium mb-1">Title</label>
+        <input type="text" id="editTitle" name="title" class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-200" required />
+      </div>
+
+      <div>
+        <label for="editStatus" class="block text-gray-700 font-medium mb-1">Status</label>
+        <select id="editStatus" name="status" class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+          <option value="draft">Draft</option>
+          <option value="published">Published</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="editContent" class="block text-gray-700 font-medium mb-1">Content</label>
+        <textarea id="editContent" name="content" rows="5" class="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-200"></textarea>
+      </div>
+
+      <div>
+        <label for="editPdf" class="block text-gray-700 font-medium mb-1">Upload PDF</label>
+        <input type="file" id="editPdf" name="pdf" accept=".pdf" class="w-full border rounded-md px-3 py-2" />
+        <p id="pdfLink" class="mt-1 text-sm text-blue-600"></p>
+      </div>
+
+      <div class="flex justify-end gap-3">
+        <button type="button" id="closeModal" class="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400">Cancel</button>
+        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const modal = document.getElementById('editModal');
+  const closeModalBtn = document.getElementById('closeModal');
+  const editButtons = document.querySelectorAll('.edit-btn');
+  const deleteButtons = document.querySelectorAll('.delete-btn');
+  const form = document.getElementById('editPostForm');
+
+  const idInput = document.getElementById('editPostId');
+  const titleInput = document.getElementById('editTitle');
+  const statusInput = document.getElementById('editStatus');
+  const contentInput = document.getElementById('editContent');
+  const pdfLink = document.getElementById('pdfLink');
+
+  // Open modal and populate form
+  editButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      idInput.value = btn.dataset.id;
+      titleInput.value = btn.dataset.title;
+      statusInput.value = btn.dataset.status;
+      contentInput.value = btn.dataset.content;
+
+      if (btn.dataset.pdf) {
+        pdfLink.innerHTML = `<a href="${btn.dataset.pdf}" target="_blank" class="hover:underline">View Current PDF</a>`;
+      } else {
+        pdfLink.innerHTML = '<span class="text-gray-400 italic">No PDF uploaded</span>';
+      }
+
+      modal.classList.remove('hidden');
+    });
+  });
+
+  // Close modal
+  closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
+
+  // Handle form submit (AJAX PUT with FormData)
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = idInput.value;
+    const formData = new FormData(form);
+
+    try {
+      const res = await fetch(`/api/admin/posts/${id}`, { method: 'PUT', body: formData });
+      const data = await res.json();
+
+      if (res.ok) {
+        const row = document.getElementById(`postRow-${id}`);
+        if (row) {
+          row.querySelector('td:nth-child(1) a').textContent = data.post.title;
+          row.querySelector('td:nth-child(2)').textContent = data.post.status;
+          // Update PDF column
+          const pdfCell = row.querySelector('td:nth-child(3)');
+          if (data.post.pdf) {
+            pdfCell.innerHTML = `<a href="${data.post.pdf}" target="_blank" class="text-blue-600 hover:underline">Download</a>`;
+          } else {
+            pdfCell.innerHTML = `<span class="text-gray-400 italic">No PDF</span>`;
+          }
+        }
+        modal.classList.add('hidden');
+        alert('✅ Post updated successfully!');
+      } else {
+        alert(data.message || 'Failed to update post');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Something went wrong');
+    }
+  });
+
+  // Delete Post
+  deleteButtons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to delete this post?')) return;
+      const id = btn.dataset.id;
+      try {
+        const res = await fetch(`/api/admin/posts/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById(`postRow-${id}`).remove();
+          alert('🗑️ Post deleted successfully!');
+        } else {
+          alert(data.message || 'Failed to delete post');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error deleting post');
+      }
+    });
+  });
+</script>

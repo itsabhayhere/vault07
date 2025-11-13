@@ -1,0 +1,80 @@
+<div class="product-container">
+    <div class="product-grid">
+        <div class="product-images">
+            <div class="main-image">
+                <img src="/<%= product.image %>" alt="<%= product.name %>" class="w-full h-64 object-cover rounded">
+            </div>
+
+            <!-- 🟩 Ad Box Below Image -->
+            <!-- <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 mt-4 text-center text-gray-500 bg-gray-50">
+                Ad Space (300×250)
+            </div> -->
+        </div>
+
+        <div class="product-info">
+            <span class="product-badge bg-orange-500 text-white px-3 py-1 rounded-md font-semibold">🔥 BESTSELLER</span>
+            
+            <h1 class="product-title text-2xl font-bold mt-2"><%= product.name %></h1>
+            
+            <div class="product-rating flex items-center gap-2 mt-2 text-yellow-500">
+                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
+                <span class="rating-text text-gray-600 text-sm">4.8 (12,543 ratings) • 45,892 students</span>
+            </div>
+
+            <div class="product-price text-lg mt-3">
+                <span class="current-price text-green-600 font-bold mr-2">FREE</span>
+                <span class="original-price line-through text-gray-500">$199.99</span>
+            </div>
+
+            <!-- 🟩 Inline Ad Box -->
+            <!-- <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 mt-4 text-center text-gray-500 bg-gray-50">
+                Sponsored Partner Ad (300×250)
+            </div> -->
+
+            <div class="action-buttons mt-5">
+                <a class="btn btn-primary bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md">
+                    <i class="fas fa-download"></i> Buy Now
+                </a>
+            </div>
+
+            <!-- 🟩 Sidebar Ad Box -->
+            <!-- <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 mt-6 text-center text-gray-500 bg-gray-50">
+                Ad – 160×600 (Sidebar)
+            </div> -->
+        </div>
+    </div>
+
+    <!-- 🟩 Ad Between Product and Tabs -->
+   <!-- 🟨 Top Banner Ad -->
+   <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 my-6 bg-gray-50 flex justify-center items-center">
+    <img 
+      src="      https://i.pinimg.com/736x/f6/c0/48/f6c048c177e9ed0a52940fdf7b67d492.jpg" 
+      alt="Ad Banner"
+      class="max-w-full h-auto object-contain rounded-md shadow-sm md:max-h-40"
+    />
+  </div>
+  
+  
+  
+
+    <div class="tabs-section">
+        <div class="tabs flex gap-3 border-b pb-2 mb-4">
+            <button class="tab  bg-blue-600 text-white px-4 py-2 rounded-md">Description</button>
+        </div>
+
+        <div class="tab-content active">
+            <p><%= product.description %></p>
+        </div>
+    </div>
+
+    <!-- 🟩 Bottom Banner Ad -->
+    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 mt-10 text-center bg-gray-50">
+        <img 
+        src="https://i.pinimg.com/736x/7a/38/a3/7a38a3834a20556a9f2d883a28486d6e.jpg" 
+        alt="Ad Banner"
+        class="mx-auto rounded-lg shadow-md max-w-full h-auto"
+        />
+        <p class="text-gray-500 text-sm mt-2">Sponsored Advertisement – 970×250</p>
+    </div>
+  
+</div>

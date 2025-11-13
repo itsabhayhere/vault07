@@ -1,0 +1,142 @@
+<div class="min-h-screen bg-gray-50 flex items-center justify-center py-10 px-4">
+  <div class="w-full max-w-2xl bg-white shadow-lg rounded-xl p-8">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-6 border-b pb-2">
+      ✍️ Create Blog Post
+    </h2>
+
+    <form id="blogForm" enctype="multipart/form-data" class="space-y-5">
+      <!-- Title -->
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Title</label>
+        <input
+          type="text"
+          name="title"
+          class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="Enter blog title"
+          required
+        />
+      </div>
+
+      <!-- Slug -->
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Slug (auto or custom)</label>
+        <input
+          type="text"
+          name="slug"
+          class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="e.g., my-first-blog"
+        />
+        <p class="text-sm text-gray-500 mt-1">If left empty, it will be auto-generated from title.</p>
+      </div>
+
+      <!-- Content -->
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Content</label>
+        <textarea
+          name="content"
+          rows="6"
+          class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="Write your blog content..."
+          required
+        ></textarea>
+      </div>
+
+      <!-- Image Upload -->
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Featured Image (optional)</label>
+        <input
+          type="file"
+          name="image"
+          accept="image/*"
+          class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4
+                 file:rounded-full file:border-0 file:text-sm file:font-semibold
+                 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+        />
+        <p class="text-sm text-gray-500 mt-1">Supported: JPG, PNG, WEBP (max 5MB).</p>
+      </div>
+
+      <!-- PDF Upload -->
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Upload PDF (optional)</label>
+        <input
+          type="file"
+          name="pdf"
+          accept=".pdf"
+          class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4
+                 file:rounded-full file:border-0 file:text-sm file:font-semibold
+                 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+        />
+        <p class="text-sm text-gray-500 mt-1">PDF will be renamed based on the blog title.</p>
+      </div>
+
+      <!-- Status -->
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Status</label>
+        <select
+          name="status"
+          class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          required
+        >
+          <option value="draft">Draft</option>
+          <option value="published">Published</option>
+        </select>
+      </div>
+
+      <!-- Submit -->
+      <button
+        type="submit"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg transition"
+      >
+        Publish Blog
+      </button>
+    </form>
+
+    <div id="message" class="mt-5"></div>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById("blogForm");
+  const messageDiv = document.getElementById("message");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+
+    try {
+      // ✅ Correct backend route
+      const res = await fetch("/api/admin/posts", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        messageDiv.innerHTML = `
+          <div class="bg-green-100 text-green-700 p-3 rounded-lg">
+            ✅ ${data.message}
+          </div>
+        `;
+        form.reset();
+
+        // Redirect to post list after 1.5s
+        setTimeout(() => (window.location.href = "/api/admin/posts"), 1500);
+      } else {
+        messageDiv.innerHTML = `
+          <div class="bg-red-100 text-red-700 p-3 rounded-lg">
+            ❌ ${data.message || "Something went wrong."}
+          </div>
+        `;
+      }
+    } catch (err) {
+      messageDiv.innerHTML = `
+        <div class="bg-yellow-100 text-yellow-800 p-3 rounded-lg">
+          ⚠️ Error: ${err.message}
+        </div>
+      `;
+    }
+  });
+</script>
+
+

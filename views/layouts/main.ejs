@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title %></title>
+
+  <link rel="stylesheet" href="/css/style.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+  />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* 🔹 Continuous scrolling marquee */
+    .marquee {
+      overflow: hidden;
+      white-space: nowrap;
+      position: relative;
+      background: #020b1c;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .marquee-content {
+      display: inline-block;
+      padding-left: 100%;
+      animation: scroll-left 22s linear infinite;
+    }
+
+    @keyframes scroll-left {
+      0% {
+        transform: translateX(0);
+      }
+      100% {
+        transform: translateX(-100%);
+      }
+    }
+
+    /* 🔹 Pause on hover */
+    .marquee:hover .marquee-content {
+      animation-play-state: paused;
+    }
+
+    .marquee a {
+      color: #000000;
+      text-decoration: none;
+      margin: 0 2rem;
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: color 0.3s;
+    }
+
+    .marquee a:hover {
+      color: #67e8f9;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body class="bg-[#0B192F] text-gray-100">
+
+<!-- 🔹 Scrolling Marquee (Dynamic) -->
+<% if (marquees && marquees.length > 0) { %>
+  <div class="marquee py-2 bg-yellow-500 text-sm">
+    <div class="marquee-content">
+      <% marquees.forEach(item => { %>
+        <a href="<%= item.link %>"><%= item.text %></a>
+      <% }) %>
+    </div>
+  </div>
+<% } %>
+
+
+  <!-- Include Header -->
+  <%- include('../partials/header') %>
+
+  <!-- 🔹 Main Layout with Sidebar + Page Content -->
+  <div class="flex min-h-screen">
+
+    <!-- 🌐 LEFT SIDEBAR WITH IMAGES -->
+   <!-- 🌐 LEFT SIDEBAR — Recent Uploads -->
+<!-- Scrollable Blog Section -->
+<aside class="hidden md:flex flex-col w-72 bg-[#0B192F] border-r border-slate-800 p-6 sticky top-0 h-screen transition-all duration-300 hover:bg-[#081225]">
+
+  <h2 class="text-xl font-semibold text-gray-100 mb-6">📰 Recent Uploads</h2>
+
+  <div class="flex-1 space-y-4 overflow-y-auto pr-1">
+
+    <% if (recentPost && recentPost.length > 0) { %>
+      <% recentPost.forEach(post => { %>
+        <a href="/api/blog/<%= post.slug %>" 
+           class="flex items-center gap-4 px-4 py-3 rounded-xl bg-slate-800/40 hover:bg-slate-700/70 transition-all duration-300">
+          <img src="<%= post.image || 'https://i.pinimg.com/1200x/a3/c2/f1/a3c2f117b8c0d6a6dbb3c232fdea6ec2.jpg' %>" 
+               alt="<%= post.title %>" 
+               class="w-10 h-10 rounded-md object-cover shadow-md" />
+          <div>
+            <p class="text-sm font-semibold text-gray-100"><%= post.title %></p>
+            <span class="text-xs text-gray-400"><%= post.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
+          </div>
+        </a>
+      <% }) %>
+    <% } else { %>
+      <p class="text-gray-400 text-sm">No recent posts available.</p>
+    <% } %>
+
+  </div>
+</aside>
+
+    <!-- 🔸 MAIN PAGE CONTENT -->
+    <main class="flex-1 p-6 md:p-10 overflow-y-auto">
+      <%- body %>
+    </main>
+
+  </div>
+
+  <!-- Include Footer -->
+  <%- include('../partials/footer') %>
+
+  <script src="/js/main.js"></script>
+
+  <script>
+    let currentSlide = 0;
+
+    function toggleDropdown() {
+        const dropdown = document.getElementById('dropdownMenu');
+        dropdown.classList.toggle('show');
+    }
+
+    window.onclick = function(e) {
+        if (!e.target.matches('.dropdown-btn')) {
+            const dropdown = document.getElementById('dropdownMenu');
+            if (dropdown.classList.contains('show')) {
+                dropdown.classList.remove('show');
+            }
+        }
+    }
+
+    function moveCarousel(direction) {
+        const carousel = document.getElementById('carousel');
+        const slides = document.querySelectorAll('.carousel-slide');
+        const dots = document.querySelectorAll('.dot');
+        
+        currentSlide += direction;
+        if (currentSlide < 0) currentSlide = slides.length - 1;
+        if (currentSlide >= slides.length) currentSlide = 0;
+
+        carousel.style.transform = `translateX(-${currentSlide * 100}%)`;
+
+        dots.forEach((dot, index) => {
+            dot.classList.toggle('active', index === currentSlide);
+        });
+    }
+
+    function setSlide(index) {
+        const carousel = document.getElementById('carousel');
+        const dots = document.querySelectorAll('.dot');
+        currentSlide = index;
+        carousel.style.transform = `translateX(-${currentSlide * 100}%)`;
+        dots.forEach((dot, i) => {
+            dot.classList.toggle('active', i === currentSlide);
+        });
+    }
+
+    // Auto-advance carousel
+    setInterval(() => {
+        moveCarousel(1);
+    }, 5000);
+  </script>
+</body>
+</html>

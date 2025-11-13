@@ -1,0 +1,135 @@
+<!-- Verification Card -->
+<div class="bg-white p-8 rounded-2xl shadow-xl">
+  <!-- Icon -->
+  <div class="flex justify-center mb-6">
+    <div class="bg-blue-100 p-4 rounded-full">
+      <svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+      </svg>
+    </div>
+  </div>
+
+  <h2 class="text-2xl font-semibold text-center mb-2 text-gray-800">Verify Your Email</h2>
+  <p class="text-center text-gray-600 mb-6 text-sm">
+    Enter the 6-digit code sent to<br>
+    <span class="font-semibold text-blue-600"><%= email %></span>
+  </p>
+
+  <!-- Error Message -->
+  <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
+    <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-6" role="alert">
+      <div class="flex items-center">
+        <svg class="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+        </svg>
+        <span><%= errorMessage %></span>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- Success Message -->
+  <% if (typeof successMessage !== 'undefined' && successMessage) { %>
+    <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-md mb-6" role="alert">
+      <div class="flex items-center">
+        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        </svg>
+        <span><%= successMessage %></span>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- OTP Form -->
+  <form action="/verify" method="POST" class="space-y-6" id="verifyForm">
+    <input type="hidden" name="email" value="<%= email %>" />
+
+    <!-- OTP Input Boxes -->
+    <div>
+      <label class="block text-gray-700 font-medium mb-3 text-center">
+        Enter Verification Code
+      </label>
+      <div class="flex justify-center gap-2 mb-4">
+        <input
+          type="text"
+          maxlength="1"
+          class="otp-input w-12 h-12 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
+          data-index="0"
+        />
+        <input
+          type="text"
+          maxlength="1"
+          class="otp-input w-12 h-12 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
+          data-index="1"
+        />
+        <input
+          type="text"
+          maxlength="1"
+          class="otp-input w-12 h-12 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
+          data-index="2"
+        />
+        <input
+          type="text"
+          maxlength="1"
+          class="otp-input w-12 h-12 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
+          data-index="3"
+        />
+        <input
+          type="text"
+          maxlength="1"
+          class="otp-input w-12 h-12 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
+          data-index="4"
+        />
+        <input
+          type="text"
+          maxlength="1"
+          class="otp-input w-12 h-12 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
+          data-index="5"
+        />
+      </div>
+      <!-- Hidden input for form submission -->
+      <input type="hidden" name="otp" id="otpValue" required />
+    </div>
+
+    <!-- Timer -->
+    <div class="text-center">
+      <p class="text-sm text-gray-600">
+        Code expires in: <span id="timer" class="font-semibold text-blue-600">10:00</span>
+      </p>
+    </div>
+
+    <!-- Submit Button -->
+    <button
+      type="submit"
+      id="verifyBtn"
+      class="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+    >
+      Verify Account
+    </button>
+  </form>
+
+  <!-- Resend Code -->
+  <div class="mt-6 text-center">
+    <p class="text-sm text-gray-600">
+      Didn't receive the code?
+      <button
+        type="button"
+        id="resendBtn"
+        onclick="resendOTP()"
+        class="text-blue-600 hover:text-blue-800 font-medium hover:underline transition ml-1"
+      >
+        Resend Code
+      </button>
+    </p>
+    <p id="resendMessage" class="text-sm mt-2"></p>
+  </div>
+
+  <!-- Back to Register -->
+  <div class="mt-6 text-center">
+    <a
+      href="/register"
+      class="text-gray-500 hover:text-gray-700 text-sm hover:underline transition"
+    >
+      ← Back to registration
+    </a>
+  </div>
+</div>

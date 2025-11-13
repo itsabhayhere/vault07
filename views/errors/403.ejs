@@ -1,0 +1,12 @@
+
+<div class="container text-center mt-5">
+  <h1 class="display-4 text-danger">403 - Forbidden</h1>
+  <p class="lead"><%= message %></p>
+
+  <% if (!user) { %>
+    <a href="/login" class="btn btn-primary mt-3">Login as Admin</a>
+  <% } else { %>
+    <a href="/" class="btn btn-secondary mt-3">Go Home</a>
+  <% } %>
+</div>
+
