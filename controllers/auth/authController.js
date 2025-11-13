@@ -55,7 +55,7 @@ async function registerUser(req, res) {
 
     // 📨 Send OTP using Resend
     await resend.emails.send({
-      from: "CourseSell <no-reply@coursesell.com>", // must be a verified sender/domain in Resend
+      from: "Vault01 <onboarding@resend.dev>", // ✅ works out of the box
       to: email,
       subject: "Your OTP Verification Code",
       html: `
