@@ -150,7 +150,7 @@ async function verifyOtp(req, res) {
 
     // Optional: Send confirmation email
     await resend.emails.send({
-      from: "Vault01 <abhaydelkumar@gmail.com>",
+      from: "Vault01 <onboarding@resend.dev>",
       to: email,
       subject: "Your Account Has Been Verified 🎉",
       html: `
