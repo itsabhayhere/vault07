@@ -4,7 +4,8 @@
   <div class="flex justify-center mb-6">
     <div class="bg-blue-100 p-4 rounded-full">
       <svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
       </svg>
     </div>
   </div>
@@ -17,77 +18,36 @@
 
   <!-- Error Message -->
   <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
-    <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-6" role="alert">
-      <div class="flex items-center">
-        <svg class="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-        </svg>
-        <span><%= errorMessage %></span>
-      </div>
+    <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-6">
+      <span><%= errorMessage %></span>
     </div>
   <% } %>
 
   <!-- Success Message -->
   <% if (typeof successMessage !== 'undefined' && successMessage) { %>
-    <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-md mb-6" role="alert">
-      <div class="flex items-center">
-        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-        </svg>
-        <span><%= successMessage %></span>
-      </div>
+    <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded-md mb-6">
+      <span><%= successMessage %></span>
     </div>
   <% } %>
 
   <!-- OTP Form -->
-  <form action="/verify" method="POST" class="space-y-6" id="verifyForm">
+  <form action="/verify" method="POST" id="verifyForm" class="space-y-6">
     <input type="hidden" name="email" value="<%= email %>" />
+    <input type="hidden" name="otp" id="otpValue" required />
 
-    <!-- OTP Input Boxes -->
-    <div>
-      <label class="block text-gray-700 font-medium mb-3 text-center">
-        Enter Verification Code
-      </label>
-      <div class="flex justify-center gap-2 mb-4">
+    <label class="block text-gray-700 font-medium mb-3 text-center">
+      Enter Verification Code
+    </label>
+
+    <!-- OTP Inputs -->
+    <div class="flex justify-center gap-2 mb-4">
+      <% for(let i=0; i<6; i++) { %>
         <input
           type="text"
           maxlength="1"
-          class="otp-input w-12 h-12 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
-          data-index="0"
-        />
-        <input
-          type="text"
-          maxlength="1"
-          class="otp-input w-12 h-12 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
-          data-index="1"
-        />
-        <input
-          type="text"
-          maxlength="1"
-          class="otp-input w-12 h-12 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
-          data-index="2"
-        />
-        <input
-          type="text"
-          maxlength="1"
-          class="otp-input w-12 h-12 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
-          data-index="3"
-        />
-        <input
-          type="text"
-          maxlength="1"
-          class="otp-input w-12 h-12 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
-          data-index="4"
-        />
-        <input
-          type="text"
-          maxlength="1"
-          class="otp-input w-12 h-12 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
-          data-index="5"
-        />
-      </div>
-      <!-- Hidden input for form submission -->
-      <input type="hidden" name="otp" id="otpValue" required />
+          class="otp-input w-12 h-12 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          data-index="<%= i %>" />
+      <% } %>
     </div>
 
     <!-- Timer -->
@@ -97,17 +57,15 @@
       </p>
     </div>
 
-    <!-- Submit Button -->
+    <!-- Verify Button -->
     <button
       type="submit"
-      id="verifyBtn"
-      class="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
-    >
+      class="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-blue-700 transition">
       Verify Account
     </button>
   </form>
 
-  <!-- Resend Code -->
+  <!-- Resend -->
   <div class="mt-6 text-center">
     <p class="text-sm text-gray-600">
       Didn't receive the code?
@@ -115,21 +73,87 @@
         type="button"
         id="resendBtn"
         onclick="resendOTP()"
-        class="text-blue-600 hover:text-blue-800 font-medium hover:underline transition ml-1"
-      >
+        class="text-blue-600 hover:text-blue-800 font-medium hover:underline transition ml-1">
         Resend Code
       </button>
     </p>
     <p id="resendMessage" class="text-sm mt-2"></p>
   </div>
 
-  <!-- Back to Register -->
   <div class="mt-6 text-center">
-    <a
-      href="/register"
-      class="text-gray-500 hover:text-gray-700 text-sm hover:underline transition"
-    >
-      ← Back to registration
-    </a>
+    <a href="/register" class="text-gray-500 hover:text-gray-700 text-sm hover:underline">← Back to registration</a>
   </div>
 </div>
+
+<!-- Scripts -->
+<script>
+  // OTP input handling
+  const inputs = document.querySelectorAll(".otp-input");
+  const otpValue = document.getElementById("otpValue");
+
+  inputs.forEach((input, index) => {
+    input.addEventListener("input", (e) => {
+      if (e.target.value.length === 1 && index < inputs.length - 1) {
+        inputs[index + 1].focus();
+      }
+      otpValue.value = Array.from(inputs).map(i => i.value).join("");
+    });
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Backspace" && !e.target.value && index > 0) {
+        inputs[index - 1].focus();
+      }
+    });
+  });
+
+  // Countdown timer (10 minutes)
+  let timeLeft = 600;
+  const timerDisplay = document.getElementById("timer");
+  const timerInterval = setInterval(() => {
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      timerDisplay.textContent = "Expired";
+      timerDisplay.classList.replace("text-blue-600", "text-red-600");
+      document.getElementById("verifyBtn").disabled = true;
+    } else {
+      const min = Math.floor(timeLeft / 60);
+      const sec = timeLeft % 60;
+      timerDisplay.textContent = `${min}:${sec.toString().padStart(2, "0")}`;
+      timeLeft--;
+    }
+  }, 1000);
+
+  // Resend OTP function
+  async function resendOTP() {
+    const btn = document.getElementById("resendBtn");
+    const msg = document.getElementById("resendMessage");
+    btn.disabled = true;
+    msg.textContent = "Resending...";
+    msg.className = "text-gray-600 text-sm mt-2";
+
+    try {
+      const res = await fetch("/resend-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "<%= email %>" }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        msg.textContent = "OTP has been resent successfully!";
+        msg.className = "text-green-600 text-sm mt-2";
+        timeLeft = 600; // reset timer
+      } else {
+        msg.textContent = data.message || "Failed to resend code.";
+        msg.className = "text-red-600 text-sm mt-2";
+      }
+    } catch (err) {
+      msg.textContent = "Network error. Please try again.";
+      msg.className = "text-red-600 text-sm mt-2";
+    }
+
+    setTimeout(() => {
+      btn.disabled = false;
+    }, 5000);
+  }
+</script>
