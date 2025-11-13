@@ -1,8 +1,11 @@
 const bcrypt = require("bcrypt");
-const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const User = require("../../models/User");
-const { EMAIL_USER, EMAIL_PASS, JWT_SECRET } = require("../../config/config");
+const { JWT_SECRET } = require("../../config/config");
+const { Resend } = require("resend");
+require("dotenv").config();
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 let pendingUsers = {}; // Temporary storage for pending users (OTP verification)
 
@@ -12,12 +15,11 @@ function getRegisterPage(req, res) {
     title: "Register",
     errorMessage: null,
     successMessage: null,
-    user: req.user || null, // Pass the user if logged in, or null if not
-
+    user: req.user || null,
   });
 }
 
-// 📨 Handle Registration — generate OTP & send email
+// 📨 Handle Registration — generate OTP & send email using Resend
 async function registerUser(req, res) {
   try {
     const { name, email, password } = req.body;
@@ -30,7 +32,6 @@ async function registerUser(req, res) {
       });
     }
 
-    // Check if already registered
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.render("pages/auth/register", {
@@ -42,9 +43,8 @@ async function registerUser(req, res) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const otp = Math.floor(100000 + Math.random() * 900000);
-    const expiry = Date.now() + 1 * 60 * 1000; // 10 minutes expiry
+    const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
 
-    // Temporarily store the data
     pendingUsers[email] = {
       name,
       email,
@@ -53,33 +53,24 @@ async function registerUser(req, res) {
       expiry,
     };
 
-    // Configure mail transporter
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      auth: {
-        user: EMAIL_USER,
-        pass: EMAIL_PASS,
-      },
-    });
-
-    const mailOptions = {
-      from: `"CourseSell" <${EMAIL_USER}>`,
+    // 📨 Send OTP using Resend
+    await resend.emails.send({
+      from: "CourseSell <no-reply@coursesell.com>", // must be a verified sender/domain in Resend
       to: email,
       subject: "Your OTP Verification Code",
       html: `
-        <h2>Welcome, ${name}!</h2>
-        <p>Use the following OTP to verify your account:</p>
-        <h1>${otp}</h1>
-        <p>This OTP will expire in <b>10 minutes</b>.</p>
+        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+          <h2>Welcome, ${name}!</h2>
+          <p>Use the following OTP to verify your account:</p>
+          <h1 style="color: #4CAF50;">${otp}</h1>
+          <p>This OTP will expire in <b>10 minutes</b>.</p>
+          <p>Best regards,<br>CourseSell Team</p>
+        </div>
       `,
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
     console.log(`✅ OTP sent to ${email}`);
 
-    // Redirect to verify page
     return res.redirect(`/verify?email=${encodeURIComponent(email)}`);
   } catch (error) {
     console.error("❌ Error sending OTP:", error.message);
@@ -126,7 +117,6 @@ async function verifyOtp(req, res) {
       });
     }
 
-    // Check OTP expiry
     if (Date.now() > pending.expiry) {
       delete pendingUsers[email];
       return res.render("pages/auth/verify", {
@@ -137,7 +127,6 @@ async function verifyOtp(req, res) {
       });
     }
 
-    // Check OTP match
     if (parseInt(otp) !== pending.otp) {
       return res.render("pages/auth/verify", {
         title: "Verify Account",
@@ -147,7 +136,6 @@ async function verifyOtp(req, res) {
       });
     }
 
-    // ✅ Create user now
     const user = new User({
       name: pending.name,
       email: pending.email,
@@ -156,12 +144,22 @@ async function verifyOtp(req, res) {
     });
     await user.save();
 
-    // Remove pending data
     delete pendingUsers[email];
 
     console.log(`✅ User verified: ${email}`);
 
-    // Redirect to login after success
+    // Optional: Send confirmation email
+    await resend.emails.send({
+      from: "CourseSell <no-reply@coursesell.com>",
+      to: email,
+      subject: "Your Account Has Been Verified 🎉",
+      html: `
+        <h2>Welcome aboard, ${pending.name}!</h2>
+        <p>Your account has been successfully verified.</p>
+        <p>You can now log in and start exploring CourseSell!</p>
+      `,
+    });
+
     return res.redirect("/login");
   } catch (error) {
     console.error("❌ OTP verification error:", error.message);
@@ -173,16 +171,14 @@ async function verifyOtp(req, res) {
   }
 }
 
-// ================================ Login 
+// ================================ Login
 function getLoginPage(req, res) {
-  // Assuming you have user data from a session or JWT token
-  const user = req.user || null; // Make sure req.user exists if you're using session or JWT
-
+  const user = req.user || null;
   res.render("pages/auth/login", {
     title: "Login",
     errorMessage: null,
     successMessage: null,
-    user: user // Pass user to EJS view
+    user,
   });
 }
 
@@ -191,7 +187,6 @@ async function loginUser(req, res) {
   try {
     const { email, password } = req.body;
 
-    // Validate input
     if (!email || !password) {
       return res.render("pages/auth/login", {
         title: "Login",
@@ -200,7 +195,6 @@ async function loginUser(req, res) {
       });
     }
 
-    // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
       return res.render("pages/auth/login", {
@@ -210,7 +204,6 @@ async function loginUser(req, res) {
       });
     }
 
-    // Check if verified
     if (!user.isVerified) {
       return res.render("pages/auth/login", {
         title: "Login",
@@ -219,7 +212,6 @@ async function loginUser(req, res) {
       });
     }
 
-    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.render("pages/auth/login", {
@@ -229,26 +221,23 @@ async function loginUser(req, res) {
       });
     }
 
-    // ✅ Sign JWT token
     const payload = {
       id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role, // ✅ Add this line
-
+      role: user.role,
     };
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
 
-    // Send the JWT token as a cookie
     res.cookie("auth_token", token, {
-      maxAge: 1000 * 60 * 60,  // Token expiration time (1 hour)
-      httpOnly: true,          // Prevent JavaScript access
-      secure: process.env.NODE_ENV === "production",  // Use secure cookies in production
+      maxAge: 1000 * 60 * 60,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
     });
 
     console.log(`✅ Logged in: ${user.email}`);
-    return res.redirect("/");  // Redirect to home page after successful login
+    return res.redirect("/");
   } catch (error) {
     console.error("❌ Login error:", error.message);
     return res.render("pages/auth/login", {
@@ -261,7 +250,7 @@ async function loginUser(req, res) {
 
 // 🚪 Handle Logout
 function logoutUser(req, res) {
-  res.clearCookie("auth_token"); // Clear the JWT cookie
+  res.clearCookie("auth_token");
   res.redirect("/login");
 }
 
