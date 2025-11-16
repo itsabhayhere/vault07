@@ -9,19 +9,33 @@
                 expert-led instruction.
             </p>
             <div class="social-links">
-                <a href="#facebooks" class="social-link">
+
+                <% if (settings.facebookUrl) { %>
+                <a href="<%= settings.facebookUrl %>" target="_blank" class="social-link">
                     <i class="fab fa-facebook-f"></i>
                 </a>
-                <a href="#twitter" class="social-link">
+                <% } %>
+            
+                <% if (settings.twitterUrl) { %>
+                <a href="<%= settings.twitterUrl %>" target="_blank" class="social-link">
                     <i class="fab fa-twitter"></i>
                 </a>
-                <a href="#Instagram" class="social-link">
+                <% } %>
+            
+                <% if (settings.instagramUrl) { %>
+                <a href="<%= settings.instagramUrl %>" target="_blank" class="social-link">
                     <i class="fab fa-instagram"></i>
                 </a>
-                <a href="#Linkedin" class="social-link">
+                <% } %>
+            
+                <% if (settings.linkedinUrl) { %>
+                <a href="<%= settings.linkedinUrl %>" target="_blank" class="social-link">
                     <i class="fab fa-linkedin-in"></i>
                 </a>
+                <% } %>
+            
             </div>
+            
         </div>
 
         <!-- Quick Links -->

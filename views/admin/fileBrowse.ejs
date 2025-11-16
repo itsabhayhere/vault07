@@ -1,0 +1,294 @@
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Browse Uploaded Files</h1>
+            <p class="text-gray-600 mt-1">View and manage all your uploaded ZIP files</p>
+        </div>
+        <a href="/admin/files" class="inline-flex items-center px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-md">
+            <i class="fas fa-upload mr-2"></i>Upload New File
+        </a>
+    </div>
+
+    <!-- Error Message -->
+    <% if (typeof error !== 'undefined' && error) { %>
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-lg">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
+                <p class="text-red-700"><%= error %></p>
+            </div>
+        </div>
+    <% } %>
+
+    <!-- No Files Message -->
+    <% if (categoryData.length === 0) { %>
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
+            <div class="flex items-start">
+                <i class="fas fa-info-circle text-blue-500 text-2xl mr-4 mt-1"></i>
+                <div>
+                    <h3 class="font-semibold text-blue-800 mb-1">No files uploaded yet</h3>
+                    <p class="text-blue-700">Get started by <a href="/admin/files" class="underline font-semibold">uploading your first file</a></p>
+                </div>
+            </div>
+        </div>
+    <% } else { %>
+
+        <!-- Categories List -->
+        <div class="space-y-4">
+            <% categoryData.forEach((category, index) => { %>
+                <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+
+                    <!-- FIXED CATEGORY HEADER – NOT A BUTTON -->
+                    <div 
+                        class="w-full px-6 py-4 flex justify-between items-center bg-gradient-to-r
+                               from-indigo-600 to-purple-600 text-white cursor-pointer 
+                               hover:from-indigo-700 hover:to-purple-700 transition"
+                        onclick="toggleAccordion('category-<%= index %>')"
+                    >
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-folder text-yellow-300 text-xl"></i>
+                            <span class="font-semibold text-lg"><%= category.name %></span>
+                            <span class="px-3 py-1 bg-white bg-opacity-20 rounded-full text-sm">
+                                <%= category.folders.length %> 
+                                <%= category.folders.length === 1 ? 'folder' : 'folders' %>
+                            </span>
+                        </div>
+
+                        <!-- Buttons (now fully visible & clickable) -->
+                        <div class="flex items-center space-x-3">
+
+                            <button onclick="event.stopPropagation(); editCategory('<%= category.name %>')" 
+                                class="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition" 
+                                title="Rename Category">
+                                <i class="fas fa-edit"></i>
+                            </button>
+
+                            <button onclick="event.stopPropagation(); deleteCategory('<%= category.name %>')" 
+                                class="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition" 
+                                title="Delete Category">
+                                <i class="fas fa-trash"></i>
+                            </button>
+
+                            <i class="fas fa-chevron-down transition-transform duration-300" 
+                               id="icon-category-<%= index %>"></i>
+                        </div>
+                    </div>
+
+                    <!-- Category Content -->
+                    <div id="category-<%= index %>" class="hidden">
+                        <div class="p-6">
+                            <% if (category.folders.length === 0) { %>
+                                <p class="text-gray-500 text-center py-4">No folders in this category</p>
+                            <% } else { %>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                                    <% category.folders.forEach(folder => { %>
+                                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition hover:border-indigo-300 bg-gray-50">
+
+                                            <div class="flex items-start justify-between mb-3">
+
+                                                <div class="flex items-center space-x-3 flex-1">
+                                                    <i class="fas fa-folder-open text-blue-500 text-2xl"></i>
+                                                    <div>
+                                                        <h4 class="font-semibold text-gray-800"><%= folder.name %></h4>
+                                                        <p class="text-sm text-gray-500 mt-1">
+                                                            <i class="fas fa-file-archive text-gray-400 mr-1"></i>
+                                                            <%= folder.fileCount %> 
+                                                            <%= folder.fileCount === 1 ? 'file' : 'files' %>
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Folder Buttons -->
+                                                <div class="flex space-x-1">
+                                                    <button onclick="event.stopPropagation(); downloadFolder('<%= category.name %>', '<%= folder.name %>')" 
+                                                        class="p-2 text-green-500 hover:bg-green-50 rounded-lg transition">
+                                                        <i class="fas fa-download"></i>
+                                                    </button>
+
+                                                    <button onclick="event.stopPropagation(); editFolder('<%= category.name %>', '<%= folder.name %>')" 
+                                                        class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+
+                                                    <button onclick="event.stopPropagation(); deleteFolder('<%= category.name %>', '<%= folder.name %>')" 
+                                                        class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Files -->
+                                            <% if (folder.files && folder.files.length > 0) { %>
+                                                <div class="mt-3 pt-3 border-t border-gray-200">
+                                                    <p class="text-xs font-semibold text-gray-600 mb-2">Files:</p>
+
+                                                    <div class="space-y-1 max-h-32 overflow-y-auto">
+
+                                                        <% folder.files.forEach(file => { %>
+                                                            <div class="flex items-center justify-between text-sm bg-white p-2 rounded hover:bg-gray-100 transition">
+
+                                                                <span class="text-gray-700 truncate flex-1" title="<%= file %>">
+                                                                    <i class="fas fa-file-zipper text-orange-500 mr-1"></i>
+                                                                    <%= file.length > 25 ? file.substring(0, 25) + '...' : file %>
+                                                                </span>
+
+                                                                <div class="flex space-x-1 ml-2">
+                                                                    <button onclick="event.stopPropagation(); downloadFile('<%= category.name %>', '<%= folder.name %>', '<%= file %>')" 
+                                                                        class="text-green-500 hover:text-green-700">
+                                                                        <i class="fas fa-download text-xs"></i>
+                                                                    </button>
+
+                                                                    <button onclick="event.stopPropagation(); editFile('<%= category.name %>', '<%= folder.name %>', '<%= file %>')" 
+                                                                        class="text-blue-500 hover:text-blue-700">
+                                                                        <i class="fas fa-edit text-xs"></i>
+                                                                    </button>
+
+                                                                    <button onclick="event.stopPropagation(); deleteFile('<%= category.name %>', '<%= folder.name %>', '<%= file %>')" 
+                                                                        class="text-red-500 hover:text-red-700">
+                                                                        <i class="fas fa-times text-xs"></i>
+                                                                    </button>
+                                                                </div>
+
+                                                            </div>
+                                                        <% }) %>
+
+                                                    </div>
+                                                </div>
+                                            <% } %>
+
+                                        </div>
+                                    <% }) %>
+
+                                </div>
+
+                            <% } %>
+                        </div>
+                    </div>
+
+                </div>
+            <% }) %>
+        </div>
+
+    <% } %>
+</div>
+
+<!-- JS -->
+<script>
+function toggleAccordion(id) {
+    const content = document.getElementById(id);
+    const icon = document.getElementById('icon-' + id);
+
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.style.transform = 'rotate(180deg)';
+    } else {
+        content.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+function downloadFile(category, folder, filename) {
+    const url = `/admin/files/download/${encodeURIComponent(category)}/${encodeURIComponent(folder)}/${encodeURIComponent(filename)}`;
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+}
+
+function deleteFile(category, folder, filename) {
+    if (!confirm(`Delete file "${filename}"?`)) return;
+
+    fetch(`/admin/files/delete/${category}/${folder}/${filename}`, { method: 'DELETE' })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) location.reload();
+            else alert(data.message);
+        });
+}
+
+function deleteFolder(category, folder) {
+    if (!confirm(`Delete folder "${folder}"?`)) return;
+
+    fetch(`/admin/files/delete-folder/${category}/${folder}`, { method: 'DELETE' })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) location.reload();
+            else alert(data.message);
+        });
+}
+
+function deleteCategory(category) {
+    if (!confirm(`Delete category "${category}"?`)) return;
+
+    fetch(`/admin/files/delete-category/${category}`, { method: 'DELETE' })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) location.reload();
+            else alert(data.message);
+        });
+}
+
+function editCategory(category) {
+    const newName = prompt(`Rename category ${category}`, category);
+    if (!newName) return;
+
+    fetch(`/admin/files/rename-category/${category}`, {
+        method: 'PUT',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newName })
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) location.reload();
+            else alert(data.message);
+        });
+}
+
+function editFolder(category, folder) {
+    const newName = prompt(`Rename folder ${folder}`, folder);
+    if (!newName) return;
+
+    fetch(`/admin/files/rename-folder/${category}/${folder}`, {
+        method: 'PUT',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newName })
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) location.reload();
+            else alert(data.message);
+        });
+}
+
+function editFile(category, folder, filename) {
+    const nameWithoutExt = filename.replace(/\.zip$/i, '');
+    const newName = prompt(`Rename file`, nameWithoutExt);
+    if (!newName) return;
+
+    fetch(`/admin/files/rename-file/${category}/${folder}/${filename}`, {
+        method: 'PUT',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newName })
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) location.reload();
+            else alert(data.message);
+        });
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+    if (document.getElementById("category-0")) {
+        toggleAccordion("category-0");
+    }
+});
+</script>
+
+<style>
+.overflow-y-auto::-webkit-scrollbar { width: 6px; }
+.overflow-y-auto::-webkit-scrollbar-track { background: #f1f1f1; }
+.overflow-y-auto::-webkit-scrollbar-thumb { background: #cbd5e0; }
+.overflow-y-auto::-webkit-scrollbar-thumb:hover { background: #a0aec0; }
+</style>

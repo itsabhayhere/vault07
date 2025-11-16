@@ -1,0 +1,267 @@
+<div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Upload ZIP Files</h1>
+        <p class="text-gray-600 mt-1">Upload and organize your ZIP files by category and folder</p>
+    </div>
+
+    <!-- Success Message -->
+    <% if (typeof success !== 'undefined' && success) { %>
+        <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-lg">
+            <div class="flex items-center">
+                <i class="fas fa-check-circle text-green-500 mr-3 text-xl"></i>
+                <p class="text-green-700 font-medium"><%= success %></p>
+            </div>
+        </div>
+    <% } %>
+
+    <!-- Error Message -->
+    <% if (typeof error !== 'undefined' && error) { %>
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-lg">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-circle text-red-500 mr-3 text-xl"></i>
+                <p class="text-red-700 font-medium"><%= error %></p>
+            </div>
+        </div>
+    <% } %>
+
+    <!-- Navigation -->
+    <div class="mb-6">
+        <a href="/admin/files/browse" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+            <i class="fas fa-folder-open mr-2"></i>Browse Files
+        </a>
+    </div>
+
+    <!-- Upload Form -->
+    <div class="bg-white rounded-lg shadow-md p-8 border border-gray-200">
+        <form action="/admin/files/upload" method="POST" enctype="multipart/form-data" id="uploadForm">
+            
+            <!-- Category Selection -->
+            <div class="mb-6">
+                <label for="category" class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-folder text-indigo-600 mr-1"></i> Category
+                </label>
+                <div class="flex gap-2">
+                    <select name="category" id="categorySelect" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option value="">-- Select or type new category --</option>
+                        <% if (categories && categories.length > 0) { %>
+                            <% categories.forEach(cat => { %>
+                                <option value="<%= cat %>"><%= cat %></option>
+                            <% }); %>
+                        <% } %>
+                    </select>
+                    <button type="button" onclick="toggleNewCategory()" class="px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                        <i class="fas fa-plus mr-1"></i> New
+                    </button>
+                </div>
+                <input type="text" name="category" id="newCategory" placeholder="Enter new category name" class="hidden w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 mt-2 transition">
+            </div>
+
+            <!-- Folder Name -->
+            <div class="mb-6">
+                <label for="folder_name" class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-folder-open text-blue-600 mr-1"></i> Folder Name
+                </label>
+                <input type="text" name="folder_name" id="folder_name" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Enter folder name (e.g., Project_Files, Documents_2024)">
+                <p class="text-xs text-gray-500 mt-1">This will be the subfolder within your category</p>
+            </div>
+
+            <!-- File Upload -->
+            <div class="mb-6">
+                <label for="zipFile" class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-file-zipper text-orange-600 mr-1"></i> ZIP File
+                </label>
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-indigo-500 transition">
+                    <input type="file" name="zipFile" id="zipFile" accept=".zip" required class="hidden" onchange="updateFileName(this)">
+                    <label for="zipFile" class="cursor-pointer">
+                        <div class="flex flex-col items-center">
+                            <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-3"></i>
+                            <p class="text-gray-600 font-medium mb-1">Click to upload or drag and drop</p>
+                            <p class="text-sm text-gray-500">ZIP files only (Max 100MB)</p>
+                            <p id="selectedFile" class="mt-3 text-sm font-semibold text-indigo-600"></p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Upload Progress -->
+            <div id="uploadProgress" class="hidden mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-700">Uploading...</span>
+                    <span id="progressPercent" class="text-sm font-medium text-indigo-600">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div id="progressBar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex gap-3">
+                <button type="submit" id="submitBtn" class="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition shadow-lg hover:shadow-xl">
+                    <i class="fas fa-upload mr-2"></i> Upload File
+                </button>
+                <button type="reset" onclick="resetForm()" class="px-6 py-3 bg-gray-500 text-white font-semibold rounded-lg hover:bg-gray-600 transition">
+                    <i class="fas fa-redo mr-2"></i> Reset
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Info Box -->
+    <div class="mt-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+        <div class="flex items-start">
+            <i class="fas fa-info-circle text-blue-500 text-xl mr-3 mt-1"></i>
+            <div class="text-sm text-blue-700">
+                <p class="font-semibold mb-1">File Organization</p>
+                <p>Files will be organized as: <code class="bg-blue-100 px-2 py-1 rounded">zip/Category/Folder_Name/your-file.zip</code></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let useNewCategory = false;
+
+function toggleNewCategory() {
+    useNewCategory = !useNewCategory;
+    const selectBox = document.getElementById('categorySelect');
+    const newCategoryInput = document.getElementById('newCategory');
+    
+    if (useNewCategory) {
+        selectBox.classList.add('hidden');
+        selectBox.removeAttribute('name');
+        newCategoryInput.classList.remove('hidden');
+        newCategoryInput.setAttribute('name', 'category');
+        newCategoryInput.focus();
+    } else {
+        selectBox.classList.remove('hidden');
+        selectBox.setAttribute('name', 'category');
+        newCategoryInput.classList.add('hidden');
+        newCategoryInput.removeAttribute('name');
+        newCategoryInput.value = '';
+    }
+}
+
+function updateFileName(input) {
+    const selectedFile = document.getElementById('selectedFile');
+    if (input.files && input.files[0]) {
+        const fileSize = (input.files[0].size / (1024 * 1024)).toFixed(2);
+        selectedFile.textContent = `Selected: ${input.files[0].name} (${fileSize} MB)`;
+    } else {
+        selectedFile.textContent = '';
+    }
+}
+
+function resetForm() {
+    document.getElementById('selectedFile').textContent = '';
+    document.getElementById('uploadProgress').classList.add('hidden');
+    useNewCategory = false;
+    document.getElementById('categorySelect').classList.remove('hidden');
+    document.getElementById('categorySelect').setAttribute('name', 'category');
+    document.getElementById('newCategory').classList.add('hidden');
+    document.getElementById('newCategory').removeAttribute('name');
+}
+
+// Form submission with validation
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    const categorySelect = document.getElementById('categorySelect');
+    const newCategory = document.getElementById('newCategory');
+    const folderName = document.getElementById('folder_name');
+    const fileInput = document.getElementById('zipFile');
+    
+    // Get category value from active input
+    const categoryValue = useNewCategory ? newCategory.value.trim() : categorySelect.value;
+    
+    if (!categoryValue) {
+        e.preventDefault();
+        alert('Please select or enter a category');
+        return false;
+    }
+    
+    if (!folderName.value.trim()) {
+        e.preventDefault();
+        alert('Please enter a folder name');
+        folderName.focus();
+        return false;
+    }
+    
+    if (!fileInput.files || !fileInput.files[0]) {
+        e.preventDefault();
+        alert('Please select a ZIP file to upload');
+        return false;
+    }
+    
+    // Check file size (100MB limit)
+    const maxSize = 100 * 1024 * 1024; // 100MB in bytes
+    if (fileInput.files[0].size > maxSize) {
+        e.preventDefault();
+        alert('File size exceeds 100MB limit');
+        return false;
+    }
+    
+    // Check file extension
+    const fileName = fileInput.files[0].name.toLowerCase();
+    if (!fileName.endsWith('.zip')) {
+        e.preventDefault();
+        alert('Only ZIP files are allowed');
+        return false;
+    }
+    
+    // Show progress indicator
+    document.getElementById('uploadProgress').classList.remove('hidden');
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('submitBtn').innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Uploading...';
+    
+    // Simulate progress (since we can't track actual progress easily with form submission)
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+        progress += 5;
+        if (progress <= 90) {
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressPercent').textContent = progress + '%';
+        }
+    }, 200);
+    
+    // Clear interval after 20 seconds (form should have submitted by then)
+    setTimeout(() => clearInterval(progressInterval), 20000);
+});
+
+// Drag and drop functionality
+const dropZone = document.querySelector('.border-dashed');
+const fileInput = document.getElementById('zipFile');
+
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
+        dropZone.classList.add('border-indigo-500', 'bg-indigo-50');
+    });
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => {
+        dropZone.classList.remove('border-indigo-500', 'bg-indigo-50');
+    });
+});
+
+dropZone.addEventListener('drop', (e) => {
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        fileInput.files = files;
+        updateFileName(fileInput);
+    }
+});
+</script>
+
+<style>
+code {
+    font-family: 'Courier New', monospace;
+}
+</style>

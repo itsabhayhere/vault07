@@ -1,0 +1,96 @@
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto bg-white shadow-md rounded-2xl p-6">
+      <h2 class="text-2xl font-semibold mb-4 text-black"><%= title %></h2>
+  
+      <% if (success) { %>
+        <div class="mb-4 px-4 py-3 rounded-lg border border-green-200 bg-green-50 text-black">
+          Settings updated successfully!
+        </div>
+      <% } %>
+  
+      <form action="/admin/settings" method="POST" class="space-y-4">
+  
+        <div>
+          <label class="block text-sm font-medium mb-1 text-black">Site Name</label>
+          <input
+            type="text"
+            name="siteName"
+            class="w-full border rounded-lg px-3 py-2 text-black focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            value="<%= settings.siteName %>"
+            required
+          />
+        </div>
+  
+        <div>
+          <label class="block text-sm font-medium mb-1 text-black">Contact Email</label>
+          <input
+            type="email"
+            name="contactEmail"
+            class="w-full border rounded-lg px-3 py-2 text-black focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            value="<%= settings.contactEmail %>"
+            required
+          />
+        </div>
+  
+        <div>
+          <label class="block text-sm font-medium mb-1 text-black">Facebook URL</label>
+          <input
+            type="text"
+            name="facebookUrl"
+            class="w-full border rounded-lg px-3 py-2 text-black focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            value="<%= settings.facebookUrl %>"
+          />
+        </div>
+  
+        <div>
+          <label class="block text-sm font-medium mb-1 text-black">Instagram URL</label>
+          <input
+            type="text"
+            name="instagramUrl"
+            class="w-full border rounded-lg px-3 py-2 text-black focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            value="<%= settings.instagramUrl %>"
+          />
+        </div>
+  
+        <div>
+          <label class="block text-sm font-medium mb-1 text-black">Twitter URL</label>
+          <input
+            type="text"
+            name="twitterUrl"
+            class="w-full border rounded-lg px-3 py-2 text-black focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            value="<%= settings.twitterUrl %>"
+          />
+        </div>
+  
+        <div>
+          <label class="block text-sm font-medium mb-1 text-black">LinkedIn URL</label>
+          <input
+            type="text"
+            name="linkedinUrl"
+            class="w-full border rounded-lg px-3 py-2 text-black focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            value="<%= settings.linkedinUrl %>"
+          />
+        </div>
+  
+        <div>
+          <label class="block text-sm font-medium mb-1 text-black">Address</label>
+          <textarea
+            name="address"
+            rows="4"
+            class="w-full border rounded-lg px-3 py-2 text-black focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          ><%= settings.address %></textarea>
+        </div>
+  
+        <div class="pt-2">
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-sm"
+          >
+            Save Changes
+          </button>
+        </div>
+  
+      </form>
+    </div>
+  </div>
+  

@@ -1,0 +1,290 @@
+<div class="min-h-screen text-slate-200 flex flex-col items-center justify-center py-10 px-4">
+
+    <div class="w-full max-w-3xl bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-2xl p-8 md:p-12 shadow-2xl">
+      
+      <!-- Header -->
+      <div class="text-center mb-8">
+        <div class="inline-block p-4 bg-cyan-500/20 rounded-full mb-4">
+          <% if (fileType === 'pdf') { %>
+            <svg class="w-16 h-16 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+            </svg>
+          <% } else { %>
+            <svg class="w-16 h-16 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+            </svg>
+          <% } %>
+        </div>
+        
+        <h1 class="text-3xl md:text-4xl font-bold text-white mb-2">
+          Download <%= fileType.toUpperCase() %> File
+        </h1>
+        <p class="text-slate-400 text-lg">
+          <%= post.title %>
+        </p>
+      </div>
+  
+      <!-- Download Status -->
+      <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-slate-300 font-medium">📊 Your Download Status</span>
+          <% if (downloadStatus.limitReached) { %>
+            <span class="px-3 py-1 bg-red-600 text-white text-xs font-semibold rounded-full">
+              Limit Reached
+            </span>
+          <% } else { %>
+            <span class="px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-full">
+              Available
+            </span>
+          <% } %>
+        </div>
+        
+        <div class="grid grid-cols-3 gap-4 text-center">
+          <div class="bg-slate-900/50 rounded-lg p-4">
+            <p class="text-2xl font-bold text-cyan-400"><%= downloadStatus.count %></p>
+            <p class="text-xs text-slate-400 mt-1">Used Today</p>
+          </div>
+          <div class="bg-slate-900/50 rounded-lg p-4">
+            <p class="text-2xl font-bold text-green-400"><%= downloadStatus.remaining %></p>
+            <p class="text-xs text-slate-400 mt-1">Remaining</p>
+          </div>
+          <div class="bg-slate-900/50 rounded-lg p-4">
+            <p class="text-2xl font-bold text-blue-400">5</p>
+            <p class="text-xs text-slate-400 mt-1">Daily Limit</p>
+          </div>
+        </div>
+      </div>
+  
+      <% if (downloadStatus.limitReached) { %>
+        <!-- Limit Reached Message -->
+        <div class="bg-red-900/30 border border-red-500/50 rounded-xl p-6 text-center">
+          <div class="text-5xl mb-4">⛔</div>
+          <h3 class="text-xl font-semibold text-red-300 mb-2">Daily Download Limit Reached</h3>
+          <p class="text-red-200 mb-4">
+            You've reached your daily limit of 5 downloads. Your limit will reset at midnight.
+          </p>
+          <a href="/blog/<%= post.slug %>" class="inline-block px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition">
+            ← Back to Blog Post
+          </a>
+        </div>
+      <% } else { %>
+        <!-- Download Section -->
+        <div class="text-center space-y-6">
+          <div class="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-700/30 rounded-xl p-6">
+            <p class="text-slate-300 mb-4">
+              Click the button below to generate a secure, one-time download link.
+            </p>
+            <p class="text-xs text-slate-400 mb-6">
+              ⏱️ Link will expire in 1 hour • 🔒 Single-use only • 📊 Counts towards daily limit
+            </p>
+            
+            <button 
+              id="generateLinkBtn"
+              onclick="generateDownloadLink()" 
+              class="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold rounded-lg transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg">
+              🔗 Generate Secure Download Link
+            </button>
+          </div>
+  
+          <!-- Download Link Display -->
+          <div id="downloadLinkBox" class="hidden">
+            <div class="bg-green-900/30 border border-green-500/50 rounded-xl p-6 space-y-4">
+              <div class="flex items-center justify-center gap-2 text-green-300">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <span class="font-semibold">Download Link Generated!</span>
+              </div>
+              
+              <div class="bg-slate-900/60 rounded-lg p-4 break-all">
+                <a 
+                  id="downloadLink" 
+                  href="#" 
+                  target="_blank" 
+                  class="text-cyan-300 hover:text-cyan-200 underline text-sm">
+                </a>
+              </div>
+              
+              <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a 
+                  id="directDownloadBtn"
+                  href="#" 
+                  class="px-6 py-3 bg-green-600 hover:bg-green-500 text-white rounded-lg transition font-medium flex items-center justify-center gap-2">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                  </svg>
+                  Download Now
+                </a>
+                <button 
+                  onclick="copyToClipboard()" 
+                  class="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition font-medium flex items-center justify-center gap-2">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/>
+                    <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"/>
+                  </svg>
+                  Copy Link
+                </button>
+              </div>
+              
+              <p id="expiryTime" class="text-xs text-slate-400"></p>
+              <p class="text-xs text-yellow-300">
+                ⚠️ This link will expire after 1 hour or after one use
+              </p>
+            </div>
+          </div>
+  
+          <!-- Loading Spinner -->
+          <div id="loadingSpinner" class="hidden">
+            <div class="flex items-center justify-center gap-3">
+              <div class="w-8 h-8 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+              <span class="text-slate-300">Generating secure link...</span>
+            </div>
+          </div>
+  
+          <!-- Error Message -->
+          <div id="errorMessage" class="hidden">
+            <div class="bg-red-900/30 border border-red-500/50 rounded-xl p-4">
+              <p class="text-red-300"></p>
+            </div>
+          </div>
+        </div>
+  
+        <!-- Recent Downloads -->
+        <% if (userDownloads && userDownloads.length > 0) { %>
+        <div class="mt-8 pt-8 border-t border-slate-700">
+          <h3 class="text-lg font-semibold text-slate-300 mb-4">📜 Your Recent Downloads</h3>
+          <div class="space-y-2">
+            <% userDownloads.forEach(download => { %>
+              <div class="bg-slate-800/30 rounded-lg p-3 flex items-center justify-between text-sm">
+                <div class="flex items-center gap-3">
+                  <span class="text-2xl"><%= download.fileType === 'pdf' ? '📄' : '📦' %></span>
+                  <div>
+                    <p class="text-slate-300"><%= download.fileName %></p>
+                    <p class="text-slate-500 text-xs"><%= new Date(download.downloadedAt).toLocaleString() %></p>
+                  </div>
+                </div>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+        <% } %>
+      <% } %>
+  
+      <!-- Back Button -->
+      <div class="mt-8 text-center">
+        <a href="/api/blog/<%= post.slug %>" class="text-cyan-400 hover:text-cyan-300 transition font-medium">
+          ← Back to Blog Post
+        </a>
+      </div>
+  
+    </div>
+  
+  </div>
+  
+  <script>
+    const postId = '<%= post._id %>';
+    const fileType = '<%= fileType %>';
+    let generatedLink = '';
+  
+    async function generateDownloadLink() {
+      const btn = document.getElementById("generateLinkBtn");
+      const linkBox = document.getElementById("downloadLinkBox");
+      const linkElement = document.getElementById("downloadLink");
+      const directBtn = document.getElementById("directDownloadBtn");
+      const expiryElement = document.getElementById("expiryTime");
+      const loadingSpinner = document.getElementById("loadingSpinner");
+      const errorMessage = document.getElementById("errorMessage");
+  
+      // Reset UI
+      linkBox.classList.add("hidden");
+      errorMessage.classList.add("hidden");
+      loadingSpinner.classList.remove("hidden");
+      btn.disabled = true;
+  
+      try {
+        // Call the API endpoint
+        const res = await fetch(`/api/generate-link/${postId}/${fileType}`);
+        const data = await res.json();
+  
+        loadingSpinner.classList.add("hidden");
+        btn.disabled = false;
+  
+        // Log the response for debugging
+        console.log("Response status:", res.status);
+        console.log("Response data:", data);
+  
+        if (res.status === 429) {
+          showError(data.message || "Daily download limit reached");
+          setTimeout(() => location.reload(), 3000);
+          return;
+        }
+  
+        if (!res.ok) {
+          const errorMsg = data.message || `Server error: ${res.status}`;
+          const errorDetail = data.error ? ` - ${data.error}` : '';
+          showError(errorMsg + errorDetail);
+          return;
+        }
+  
+        if (data.success && data.downloadURL) {
+          generatedLink = data.downloadURL;
+          
+          linkElement.href = data.downloadURL;
+          linkElement.textContent = data.downloadURL;
+          directBtn.href = data.downloadURL;
+          linkBox.classList.remove("hidden");
+  
+          if (data.expiresAt) {
+            const expiryDate = new Date(data.expiresAt);
+            expiryElement.textContent = `Expires at: ${expiryDate.toLocaleString()}`;
+          }
+  
+          showNotification("✅ Download link generated successfully!", "success");
+  
+          // Update download status display
+          if (data.downloadStatus) {
+            setTimeout(() => location.reload(), 2000);
+          }
+        } else {
+          showError(data.message || "Failed to generate link");
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+        loadingSpinner.classList.add("hidden");
+        btn.disabled = false;
+        showError(`Network error: ${err.message}`);
+      }
+    }
+  
+    function copyToClipboard() {
+      if (!generatedLink) return;
+  
+      navigator.clipboard.writeText(generatedLink)
+        .then(() => showNotification("📋 Link copied to clipboard!", "success"))
+        .catch(err => {
+          console.error("Copy failed:", err);
+          showNotification("❌ Failed to copy link", "error");
+        });
+    }
+  
+    function showError(message) {
+      const errorBox = document.getElementById("errorMessage");
+      errorBox.querySelector("p").textContent = message;
+      errorBox.classList.remove("hidden");
+      setTimeout(() => errorBox.classList.add("hidden"), 8000);
+    }
+  
+    function showNotification(message, type = "success") {
+      const notification = document.createElement("div");
+      notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 z-50 ${
+        type === "success" ? "bg-green-600 text-white" : "bg-red-600 text-white"
+      }`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.transform = "translateX(400px)";
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
+    }
+  </script>

@@ -8,6 +8,7 @@ require("dotenv").config();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 let pendingUsers = {}; // Temporary storage for pending users (OTP verification)
+let passwordResetOTPs = {}; // Temporary storage for password reset OTPs
 
 // 🧩 Render Register Page
 function getRegisterPage(req, res) {
@@ -254,6 +255,200 @@ function logoutUser(req, res) {
   res.redirect("/login");
 }
 
+// ================================ Forgot Password
+
+// 📄 Render Forgot Password Page
+function getForgotPasswordPage(req, res) {
+  res.render("pages/auth/forgot-password", {
+    title: "Forgot Password",
+    errorMessage: null,
+    successMessage: null,
+  });
+}
+
+// 📨 Handle Forgot Password Request - Send OTP
+async function requestPasswordReset(req, res) {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.render("pages/auth/forgot-password", {
+        title: "Forgot Password",
+        errorMessage: "Please enter your email address.",
+        successMessage: null,
+      });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      // For security, don't reveal if email exists
+      return res.render("pages/auth/forgot-password", {
+        title: "Forgot Password",
+        errorMessage: null,
+        successMessage: "If an account exists with this email, you will receive a password reset OTP.",
+      });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+
+    passwordResetOTPs[email] = {
+      otp,
+      expiry,
+    };
+
+    // 📨 Send OTP using Resend
+    await resend.emails.send({
+      from: "Vault01 <onboarding@resend.dev>",
+      to: email,
+      subject: "Password Reset OTP",
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+          <h2>Password Reset Request</h2>
+          <p>You requested to reset your password. Use the following OTP:</p>
+          <h1 style="color: #FF5722;">${otp}</h1>
+          <p>This OTP will expire in <b>10 minutes</b>.</p>
+          <p>If you didn't request this, please ignore this email.</p>
+          <p>Best regards,<br>CourseSell Team</p>
+        </div>
+      `,
+    });
+
+    console.log(`✅ Password reset OTP sent to ${email}`);
+
+    return res.redirect(`/reset-password?email=${encodeURIComponent(email)}`);
+  } catch (error) {
+    console.error("❌ Error sending password reset OTP:", error.message);
+    return res.render("pages/auth/forgot-password", {
+      title: "Forgot Password",
+      errorMessage: "Failed to send OTP. Please try again later.",
+      successMessage: null,
+    });
+  }
+}
+
+// 📄 Render Reset Password Page
+function getResetPasswordPage(req, res) {
+  const email = req.query.email || "";
+  res.render("pages/auth/reset-password", {
+    title: "Reset Password",
+    email,
+    errorMessage: null,
+    successMessage: null,
+  });
+}
+
+// 🔐 Handle Password Reset with OTP Verification
+async function resetPassword(req, res) {
+  try {
+    const { email, otp, newPassword, confirmPassword } = req.body;
+
+    if (!email || !otp || !newPassword || !confirmPassword) {
+      return res.render("pages/auth/reset-password", {
+        title: "Reset Password",
+        email,
+        errorMessage: "All fields are required.",
+        successMessage: null,
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.render("pages/auth/reset-password", {
+        title: "Reset Password",
+        email,
+        errorMessage: "Passwords do not match.",
+        successMessage: null,
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.render("pages/auth/reset-password", {
+        title: "Reset Password",
+        email,
+        errorMessage: "Password must be at least 6 characters long.",
+        successMessage: null,
+      });
+    }
+
+    const resetData = passwordResetOTPs[email];
+    if (!resetData) {
+      return res.render("pages/auth/reset-password", {
+        title: "Reset Password",
+        email,
+        errorMessage: "No password reset request found or OTP expired.",
+        successMessage: null,
+      });
+    }
+
+    if (Date.now() > resetData.expiry) {
+      delete passwordResetOTPs[email];
+      return res.render("pages/auth/reset-password", {
+        title: "Reset Password",
+        email,
+        errorMessage: "OTP expired. Please request a new one.",
+        successMessage: null,
+      });
+    }
+
+    if (parseInt(otp) !== resetData.otp) {
+      return res.render("pages/auth/reset-password", {
+        title: "Reset Password",
+        email,
+        errorMessage: "Invalid OTP. Please try again.",
+        successMessage: null,
+      });
+    }
+
+    // Update password
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.render("pages/auth/reset-password", {
+        title: "Reset Password",
+        email,
+        errorMessage: "User not found.",
+        successMessage: null,
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    delete passwordResetOTPs[email];
+
+    console.log(`✅ Password reset successful for ${email}`);
+
+    // Send confirmation email
+    await resend.emails.send({
+      from: "Vault01 <onboarding@resend.dev>",
+      to: email,
+      subject: "Password Successfully Reset",
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+          <h2>Password Reset Confirmation</h2>
+          <p>Your password has been successfully reset.</p>
+          <p>If you didn't make this change, please contact support immediately.</p>
+          <p>Best regards,<br>CourseSell Team</p>
+        </div>
+      `,
+    });
+
+    return res.render("pages/auth/login", {
+      title: "Login",
+      errorMessage: null,
+      successMessage: "Password reset successful! Please log in with your new password.",
+    });
+  } catch (error) {
+    console.error("❌ Password reset error:", error.message);
+    return res.render("pages/auth/reset-password", {
+      title: "Reset Password",
+      email: req.body.email,
+      errorMessage: "Something went wrong. Please try again.",
+      successMessage: null,
+    });
+  }
+}
+
 module.exports = {
   getRegisterPage,
   registerUser,
@@ -262,4 +457,8 @@ module.exports = {
   getLoginPage,
   loginUser,
   logoutUser,
+  getForgotPasswordPage,
+  requestPasswordReset,
+  getResetPasswordPage,
+  resetPassword,
 };

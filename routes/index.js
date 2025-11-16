@@ -11,7 +11,11 @@ const {
   verifyOtp,
   getLoginPage, 
   loginUser, 
-  logoutUser
+  logoutUser,
+  getForgotPasswordPage,
+  requestPasswordReset,
+  getResetPasswordPage,
+  resetPassword
 } = require("../controllers/auth/authController");
 
 
@@ -33,5 +37,10 @@ router.post("/login", loginUser); // Handles login process
 
 // Logout route
 router.get("/logout", logoutUser); // Logs the user out and redirects to login
+// Forgot Password Routes
+router.get("/forgot-password", getForgotPasswordPage);
+router.post("/forgot-password", requestPasswordReset);
+router.get("/reset-password", getResetPasswordPage);
+router.post("/reset-password", resetPassword);
 
 module.exports = router;

@@ -22,6 +22,9 @@ const postSchema = new mongoose.Schema(
     pdf: {
       type: String, // will store the uploaded PDF file path
     },
+    zip: {
+      type: String, // will store the uploaded ZIP file path
+    },
     publishedAt: {
       type: Date,
       default: Date.now,

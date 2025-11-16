@@ -52,7 +52,7 @@
                  file:rounded-full file:border-0 file:text-sm file:font-semibold
                  file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
         />
-        <p class="text-sm text-gray-500 mt-1">Supported: JPG, PNG, WEBP (max 5MB).</p>
+        <p class="text-sm text-gray-500 mt-1">Supported: JPG, PNG, WEBP (max 10MB).</p>
       </div>
 
       <!-- PDF Upload -->
@@ -64,9 +64,37 @@
           accept=".pdf"
           class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4
                  file:rounded-full file:border-0 file:text-sm file:font-semibold
-                 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                 file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
         />
-        <p class="text-sm text-gray-500 mt-1">PDF will be renamed based on the blog title.</p>
+        <p class="text-sm text-gray-500 mt-1">PDF will be renamed based on the blog title (max 50MB).</p>
+      </div>
+
+      <!-- ZIP Upload -->
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Upload ZIP (optional)</label>
+        <input
+          type="file"
+          name="zip"
+          accept=".zip"
+          class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4
+                 file:rounded-full file:border-0 file:text-sm file:font-semibold
+                 file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+        />
+        <p class="text-sm text-gray-500 mt-1">Upload a ZIP file for downloadable resources (max 2GB).</p>
+        <div id="zipProgress" class="hidden mt-2">
+          <div class="w-full bg-gray-200 rounded-full h-2.5">
+            <div id="zipProgressBar" class="bg-purple-600 h-2.5 rounded-full transition-all" style="width: 0%"></div>
+          </div>
+          <p id="zipProgressText" class="text-sm text-gray-600 mt-1">Uploading: 0%</p>
+        </div>
+      </div>
+
+      <!-- File Upload Info -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p class="text-sm text-blue-800">
+          <strong>📎 Note:</strong> You can attach either a PDF, a ZIP file, or both to your blog post. 
+          These files will be available for download to authenticated users.
+        </p>
       </div>
 
       <!-- Status -->
@@ -85,7 +113,8 @@
       <!-- Submit -->
       <button
         type="submit"
-        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg transition"
+        id="submitBtn"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed"
       >
         Publish Blog
       </button>
@@ -98,9 +127,15 @@
 <script>
   const form = document.getElementById("blogForm");
   const messageDiv = document.getElementById("message");
+  const submitBtn = document.getElementById("submitBtn");
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    
+    // Disable submit button to prevent double submission
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Publishing...";
+    
     const formData = new FormData(form);
 
     try {
@@ -128,6 +163,10 @@
             ❌ ${data.message || "Something went wrong."}
           </div>
         `;
+        
+        // Re-enable submit button on error
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Publish Blog";
       }
     } catch (err) {
       messageDiv.innerHTML = `
@@ -135,8 +174,32 @@
           ⚠️ Error: ${err.message}
         </div>
       `;
+      
+      // Re-enable submit button on error
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Publish Blog";
     }
   });
+
+  // Optional: File size validation before upload
+  const pdfInput = document.querySelector('input[name="pdf"]');
+  const zipInput = document.querySelector('input[name="zip"]');
+  const imageInput = document.querySelector('input[name="image"]');
+
+  function validateFileSize(input, maxSizeMB, fileType) {
+    input.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const sizeMB = file.size / (1024 * 1024);
+        if (sizeMB > maxSizeMB) {
+          alert(`${fileType} file size should not exceed ${maxSizeMB}MB. Your file is ${sizeMB.toFixed(2)}MB.`);
+          input.value = '';
+        }
+      }
+    });
+  }
+
+  validateFileSize(pdfInput, 50, 'PDF');
+  validateFileSize(zipInput, 50, 'ZIP');
+  validateFileSize(imageInput, 10, 'Image');
 </script>
-
-

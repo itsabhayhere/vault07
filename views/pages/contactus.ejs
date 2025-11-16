@@ -1,36 +1,52 @@
 <section class="contact-hero">
     <h1>We'd love to hear from you.</h1>
-    <p>Whether you have a question about courses, pricing, or anything else, our team is ready to answer all your inquiries.</p>
+    <p>
+        Whether you have a question about courses, pricing, or anything else,
+        our team is ready to answer all your inquiries.
+    </p>
 </section>
 
 <section class="contact-grid content-section">
-    
+
     <div class="contact-details">
         <h2>Get in Touch</h2>
+
+        <!-- Email -->
         <div class="contact-item">
             <i class="fas fa-envelope contact-icon"></i>
             <div>
                 <h3>Email Support</h3>
                 <p>Our friendly support team is here to help.</p>
-                <a href="mailto:support@yoursite.com" class="contact-link">support@yoursite.com</a>
+
+                <a href="mailto:<%= settings.contactEmail %>" class="contact-link">
+                    <%= settings.contactEmail %>
+                </a>
             </div>
         </div>
+
+        <!-- Phone -->
         <div class="contact-item">
             <i class="fas fa-phone contact-icon"></i>
             <div>
                 <h3>Phone</h3>
-                <p>Mon-Fri, 9am to 5pm (PST)</p>
-                <a href="tel:+15551234567" class="contact-link">+1 (555) 123-4567</a>
+                <p>Mon–Fri, 9am to 5pm (IST)</p>
+
+                <a href="tel:<%= settings.phone %>" class="contact-link">
+                    <%= settings.phone %>
+                </a>
             </div>
         </div>
+
+        <!-- Address -->
         <div class="contact-item">
             <i class="fas fa-map-marker-alt contact-icon"></i>
             <div>
                 <h3>Office</h3>
-                <p>123 Learning Lane, Suite 400</p>
-                <p>Knowledge City, CA 90210</p>
+                <p><%= settings.address %></p>
             </div>
         </div>
+
+        <!-- Business Hours -->
         <div class="contact-item">
             <i class="fas fa-clock contact-icon"></i>
             <div>
@@ -40,27 +56,34 @@
             </div>
         </div>
     </div>
-    
+
+    <!-- Contact Form -->
     <div class="contact-form-container">
         <h2>Send Us a Message</h2>
+
         <form action="#" method="POST" class="contact-form">
             <div class="form-group">
                 <label for="name">Full Name</label>
                 <input type="text" id="name" name="name" required>
             </div>
+
             <div class="form-group">
                 <label for="email">Email Address</label>
                 <input type="email" id="email" name="email" required>
             </div>
+
             <div class="form-group full-width">
                 <label for="subject">Subject</label>
                 <input type="text" id="subject" name="subject" required>
             </div>
+
             <div class="form-group full-width">
                 <label for="message">Your Message</label>
                 <textarea id="message" name="message" rows="6" required></textarea>
             </div>
+
             <button type="submit" class="submit-btn">Send Message</button>
         </form>
     </div>
+
 </section>

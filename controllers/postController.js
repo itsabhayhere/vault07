@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const Post = require("../models/Post");
+const Download = require("../models/Download");
 const slugify = require("slugify");
 const multer = require("multer");
 const path = require("path");
@@ -10,27 +11,29 @@ const fs = require("fs");
 // ============================
 const UPLOAD_DIRS = {
   PDF: "uploads/pdfs",
+  ZIP: "uploads/zips",
   IMAGE: "uploads/images",
   OTHER: "uploads/others",
 };
 
 const ALLOWED_FILE_TYPES = {
   PDF: ["application/pdf"],
+  ZIP: ["application/zip", "application/x-zip-compressed"],
   IMAGE: ["image/jpeg", "image/png", "image/jpg", "image/webp"],
 };
 
-const FILE_SIZE_LIMIT = 10 * 1024 * 1024; // 10MB
+const FILE_SIZE_LIMIT = 50 * 1024 * 1024; // 50MB
 const TOKEN_EXPIRY = 60 * 60 * 1000; // 1 hour
 const TOKEN_CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
 const MAX_TITLE_LENGTH = 200;
 const ALLOWED_STATUSES = ["draft", "published", "archived"];
+const DAILY_DOWNLOAD_LIMIT = 5;
 
 // ============================
 // 🧠 In-memory Token Store with Auto-cleanup
 // ============================
 const activeDownloadTokens = new Map();
 
-// Periodic cleanup of expired tokens
 setInterval(() => {
   const now = Date.now();
   for (const [token, data] of activeDownloadTokens.entries()) {
@@ -43,29 +46,17 @@ setInterval(() => {
 // ============================
 // 🛡️ Security Helper Functions
 // ============================
-
-/**
- * Validates and sanitizes file path to prevent directory traversal
- */
 function validateFilePath(filePath, baseDir = "uploads") {
   if (!filePath) return null;
-
-  // Normalize and remove any parent directory references
   const normalizedPath = path.normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, "");
   const fullPath = path.join(__dirname, "..", normalizedPath);
   const basePath = path.join(__dirname, "..", baseDir);
-
-  // Ensure the resolved path is within the base directory
   if (!fullPath.startsWith(basePath)) {
     throw new Error("Invalid file path");
   }
-
   return fullPath;
 }
 
-/**
- * Checks if file exists on filesystem
- */
 function fileExists(filePath) {
   try {
     return fs.existsSync(filePath);
@@ -74,33 +65,33 @@ function fileExists(filePath) {
   }
 }
 
-/**
- * Validates status value
- */
 function isValidStatus(status) {
   return ALLOWED_STATUSES.includes(status);
 }
 
-/**
- * Sanitizes title (basic XSS prevention)
- */
 function sanitizeTitle(title) {
   return title.trim().substring(0, MAX_TITLE_LENGTH);
 }
 
+function getClientIp(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0] || 
+         req.connection.remoteAddress || 
+         req.socket.remoteAddress;
+}
+
 // ============================
-// 📁 Multer Configuration (Image + PDF)
+// 📁 Multer Configuration
 // ============================
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     let uploadDir = UPLOAD_DIRS.OTHER;
-
     if (file.mimetype === "application/pdf") {
       uploadDir = UPLOAD_DIRS.PDF;
+    } else if (ALLOWED_FILE_TYPES.ZIP.includes(file.mimetype)) {
+      uploadDir = UPLOAD_DIRS.ZIP;
     } else if (file.mimetype.startsWith("image/")) {
       uploadDir = UPLOAD_DIRS.IMAGE;
     }
-
     fs.mkdirSync(uploadDir, { recursive: true });
     cb(null, uploadDir);
   },
@@ -119,13 +110,13 @@ const storage = multer.diskStorage({
 const fileFilter = (req, file, cb) => {
   const allowedTypes = [
     ...ALLOWED_FILE_TYPES.PDF,
+    ...ALLOWED_FILE_TYPES.ZIP,
     ...ALLOWED_FILE_TYPES.IMAGE,
   ];
-
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error("Only PDF or image files are allowed"), false);
+    cb(new Error("Only PDF, ZIP, or image files are allowed"), false);
   }
 };
 
@@ -153,7 +144,6 @@ async function createPost(req, res) {
   try {
     const { title, content, status } = req.body;
 
-    // Validation
     if (!title || !content) {
       return res.status(400).json({
         success: false,
@@ -169,7 +159,6 @@ async function createPost(req, res) {
       });
     }
 
-    // Validate status
     const postStatus = status || "draft";
     if (!isValidStatus(postStatus)) {
       return res.status(400).json({
@@ -180,10 +169,14 @@ async function createPost(req, res) {
 
     const slug = slugify(sanitizedTitle, { lower: true, strict: true });
 
-    // Handle file uploads
     const pdfPath = req.files?.pdf
       ? `/uploads/pdfs/${req.files.pdf[0].filename}`
       : null;
+    
+    const zipPath = req.files?.zip
+      ? `/uploads/zips/${req.files.zip[0].filename}`
+      : null;
+    
     const imagePath = req.files?.image
       ? `/uploads/images/${req.files.image[0].filename}`
       : null;
@@ -193,6 +186,7 @@ async function createPost(req, res) {
       slug,
       content,
       pdf: pdfPath,
+      zip: zipPath,
       blogImage: imagePath,
       status: postStatus,
     });
@@ -207,7 +201,6 @@ async function createPost(req, res) {
   } catch (error) {
     console.error("❌ Error creating post:", error);
 
-    // Handle duplicate slug error
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
@@ -277,7 +270,6 @@ async function updatePost(req, res) {
     const { title, content, status } = req.body;
     const postId = req.params.id;
 
-    // Validation
     if (!title || !content) {
       return res.status(400).json({
         success: false,
@@ -293,7 +285,6 @@ async function updatePost(req, res) {
       });
     }
 
-    // Validate status if provided
     if (status && !isValidStatus(status)) {
       return res.status(400).json({
         success: false,
@@ -308,9 +299,11 @@ async function updatePost(req, res) {
       updateData.status = status;
     }
 
-    // Handle updated files
     if (req.files?.pdf) {
       updateData.pdf = `/uploads/pdfs/${req.files.pdf[0].filename}`;
+    }
+    if (req.files?.zip) {
+      updateData.zip = `/uploads/zips/${req.files.zip[0].filename}`;
     }
     if (req.files?.image) {
       updateData.blogImage = `/uploads/images/${req.files.image[0].filename}`;
@@ -336,7 +329,6 @@ async function updatePost(req, res) {
   } catch (error) {
     console.error("Error updating post:", error);
 
-    // Handle duplicate slug error
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
@@ -365,12 +357,17 @@ async function deletePost(req, res) {
       });
     }
 
-    // Optional: Delete associated files from filesystem
     try {
       if (deletedPost.pdf) {
         const pdfPath = validateFilePath(deletedPost.pdf);
         if (pdfPath && fileExists(pdfPath)) {
           fs.unlinkSync(pdfPath);
+        }
+      }
+      if (deletedPost.zip) {
+        const zipPath = validateFilePath(deletedPost.zip);
+        if (zipPath && fileExists(zipPath)) {
+          fs.unlinkSync(zipPath);
         }
       }
       if (deletedPost.blogImage) {
@@ -381,7 +378,6 @@ async function deletePost(req, res) {
       }
     } catch (fileError) {
       console.error("Error deleting files:", fileError);
-      // Continue even if file deletion fails
     }
 
     res.status(200).json({
@@ -466,7 +462,6 @@ async function getPostBySlug(req, res) {
       });
     }
 
-    // Only show published posts to public
     if (post.status !== "published" && (!req.user || !req.user.isAdmin)) {
       return res.status(404).render("pages/404", {
         title: "Post Not Found",
@@ -487,10 +482,28 @@ async function getPostBySlug(req, res) {
         : `/uploads/pdfs/${post.pdf}`
       : null;
 
+    const zipUrl = post.zip
+      ? post.zip.startsWith("/uploads")
+        ? post.zip
+        : `/uploads/zips/${post.zip}`
+      : null;
+
+    // Check daily download limit if user is logged in
+    let downloadStatus = { count: 0, remaining: 5, limitReached: false };
+    if (req.user) {
+      try {
+        downloadStatus = await Download.checkDailyLimit(req.user._id);
+      } catch (err) {
+        console.error("Error checking download limit:", err);
+      }
+    }
+
     res.render("pages/blogpage", {
       post,
       imageUrl,
       pdfUrl,
+      zipUrl,
+      downloadStatus,
       title: post.title,
       user: req.user,
       layout: "layouts/main",
@@ -505,28 +518,35 @@ async function getPostBySlug(req, res) {
 }
 
 // ============================
-// 📄 Direct PDF Download (Admin use)
+// 📄 Direct File Download (Admin use)
 // ============================
-async function downloadPDF(req, res) {
+async function downloadFile(req, res) {
   try {
     const post = await Post.findById(req.params.id);
+    const fileType = req.params.type; // 'pdf' or 'zip'
 
-    if (!post || !post.pdf) {
-      return res.status(404).send("PDF not found");
+    if (!post) {
+      return res.status(404).send("Post not found");
+    }
+
+    const filePath = fileType === 'zip' ? post.zip : post.pdf;
+
+    if (!filePath) {
+      return res.status(404).send(`${fileType.toUpperCase()} not found`);
     }
 
     // Validate file path to prevent directory traversal
-    const filePath = validateFilePath(post.pdf);
+    const validatedPath = validateFilePath(filePath);
 
-    if (!filePath || !fileExists(filePath)) {
-      return res.status(404).send("PDF file not found on server");
+    if (!validatedPath || !fileExists(validatedPath)) {
+      return res.status(404).send("File not found on server");
     }
 
-    return res.download(filePath, path.basename(filePath), (err) => {
+    return res.download(validatedPath, path.basename(validatedPath), (err) => {
       if (err) {
         console.error("Error during download:", err);
         if (!res.headersSent) {
-          res.status(500).send("Error downloading PDF");
+          res.status(500).send("Error downloading file");
         }
       }
     });
@@ -539,35 +559,144 @@ async function downloadPDF(req, res) {
 }
 
 // ============================
-// ⏳ Generate Temporary Download Link (valid for 1 hour)
+// 🔗 NEW: Render Download Page
 // ============================
-async function generatePDFDownloadLink(req, res) {
+async function getDownloadPage(req, res) {
   try {
-    // Check if user is authenticated
     if (!req.user) {
+      return res.redirect(`/login?redirect=${encodeURIComponent(req.originalUrl)}`);
+    }
+
+    const { id, type } = req.params;
+
+    if (!['pdf', 'zip'].includes(type)) {
+      return res.status(400).render("error", {
+        message: "Invalid file type",
+        user: req.user,
+      });
+    }
+
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).render("error", {
+        message: "Invalid post ID",
+        user: req.user,
+      });
+    }
+
+    const post = await Post.findById(id);
+    if (!post) {
+      return res.status(404).render("pages/404", {
+        title: "Post Not Found",
+        user: req.user,
+        layout: "layouts/main",
+      });
+    }
+
+    const filePath = type === 'zip' ? post.zip : post.pdf;
+    if (!filePath) {
+      return res.status(404).render("error", {
+        message: `No ${type.toUpperCase()} file available for this post`,
+        user: req.user,
+      });
+    }
+
+    const downloadStatus = await Download.checkDailyLimit(req.user._id);
+
+    const userDownloads = await Download.find({
+      userId: req.user._id,
+      postId: id,
+      fileType: type,
+    })
+      .sort({ downloadedAt: -1 })
+      .limit(5);
+
+    res.render("pages/download-page", {
+      post,
+      fileType: type,
+      downloadStatus,
+      userDownloads,
+      title: `Download ${type.toUpperCase()} - ${post.title}`,
+      user: req.user,
+      layout: "layouts/main",
+    });
+  } catch (error) {
+    console.error("Error loading download page:", error);
+    res.status(500).render("error", {
+      message: "Error loading download page",
+      user: req.user,
+    });
+  }
+}
+
+// ============================
+// ⏳ Generate Temporary Download Link
+// ============================
+async function generateFileDownloadLink(req, res) {
+  try {
+    // Authentication check
+    if (!req.user || !req.user._id) {
+      console.log("❌ No user found in request. req.user:", req.user);
       return res.status(401).json({
         success: false,
         message: "Authentication required. Please log in to download resources.",
       });
     }
 
-    console.log("📝 Generate link request for ID:", req.params.id);
-    console.log("👤 Requested by user:", req.user.email || req.user.name);
+    console.log("✅ User authenticated:", req.user.email || req.user._id);
+
+    const { id, type } = req.params;
     
-    const { id } = req.params;
+    // Validate file type
+    if (!['pdf', 'zip'].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid file type. Must be 'pdf' or 'zip'",
+      });
+    }
     
     // Validate MongoDB ObjectId format
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-      console.log("❌ Invalid ID format");
       return res.status(400).json({
         success: false,
         message: "Invalid post ID format",
       });
     }
 
-    const post = await Post.findById(id);
-    console.log("📄 Post found:", post ? "Yes" : "No");
-    
+    // Check daily download limit
+    let limitCheck;
+    try {
+      limitCheck = await Download.checkDailyLimit(req.user._id);
+    } catch (limitError) {
+      console.error("Error checking download limit:", limitError);
+      return res.status(500).json({
+        success: false,
+        message: "Error checking download limit. Please try again.",
+        error: process.env.NODE_ENV === 'development' ? limitError.message : undefined
+      });
+    }
+
+    if (limitCheck.limitReached) {
+      return res.status(429).json({
+        success: false,
+        message: `Daily download limit reached. You can download ${DAILY_DOWNLOAD_LIMIT} files per day. Try again tomorrow.`,
+        downloadCount: limitCheck.count,
+        remaining: limitCheck.remaining,
+      });
+    }
+
+    // Find post
+    let post;
+    try {
+      post = await Post.findById(id);
+    } catch (dbError) {
+      console.error("Database error finding post:", dbError);
+      return res.status(500).json({
+        success: false,
+        message: "Database error while finding post",
+        error: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+      });
+    }
+
     if (!post) {
       return res.status(404).json({
         success: false,
@@ -575,70 +704,82 @@ async function generatePDFDownloadLink(req, res) {
       });
     }
 
-    if (!post.pdf) {
+    // Get file path
+    const filePath = type === 'zip' ? post.zip : post.pdf;
+    if (!filePath) {
       return res.status(404).json({
         success: false,
-        message: "No PDF attached to this post",
+        message: `No ${type.toUpperCase()} attached to this post`,
       });
     }
 
-    console.log("📎 PDF path:", post.pdf);
-
-    // Validate file exists on filesystem
-    let filePath;
+    // Validate file path
+    let validatedPath;
     try {
-      filePath = validateFilePath(post.pdf);
-      console.log("✅ Validated file path:", filePath);
+      validatedPath = validateFilePath(filePath);
     } catch (pathError) {
-      console.error("❌ Path validation error:", pathError.message);
+      console.error("Path validation error:", pathError);
       return res.status(400).json({
         success: false,
         message: "Invalid file path",
+        error: process.env.NODE_ENV === 'development' ? pathError.message : undefined
       });
     }
 
-    if (!filePath || !fileExists(filePath)) {
-      console.log("❌ File does not exist on server");
+    // Check if file exists
+    if (!validatedPath || !fileExists(validatedPath)) {
+      console.error(`File not found: ${validatedPath}`);
       return res.status(404).json({
         success: false,
-        message: "PDF file not found on server",
+        message: "File not found on server",
+        filePath: process.env.NODE_ENV === 'development' ? validatedPath : undefined
       });
     }
 
-    // Generate secure token
+    // Generate token
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = Date.now() + TOKEN_EXPIRY;
 
-    activeDownloadTokens.set(token, { postId: id, expiresAt });
-    console.log("🔑 Token generated:", token.substring(0, 10) + "...");
+    activeDownloadTokens.set(token, {
+      postId: id,
+      fileType: type,
+      userId: req.user._id.toString(),
+      expiresAt,
+    });
 
-    // Generate download URL with correct prefix
-    // Check if we're using /api prefix by looking at the original URL
-    const routePrefix = req.originalUrl.includes('/api/') ? '/api' : '';
-    const downloadURL = `${req.protocol}://${req.get("host")}${routePrefix}/download-temp/${token}`;
-    console.log("🔗 Download URL:", downloadURL);
+    // Build download URL
+    const protocol = req.protocol;
+    const host = req.get("host");
+    
+    // Since all routes are mounted under /api in app.js
+    const downloadURL = `${protocol}://${host}/api/download-temp/${token}`;
+
+    console.log(`✅ Generated download link for user ${req.user.email}: ${downloadURL}`);
 
     return res.json({
       success: true,
       message: "Temporary download link generated",
       downloadURL,
+      fileType: type,
       expiresAt: new Date(expiresAt).toISOString(),
+      downloadStatus: limitCheck,
     });
   } catch (error) {
     console.error("❌ Error generating link:", error);
-    console.error("Stack trace:", error.stack);
+    console.error("Error stack:", error.stack);
     return res.status(500).json({
       success: false,
-      message: error.message || "Server error",
-      ...(process.env.NODE_ENV === 'development' && { error: error.toString() })
+      message: "Server error while generating link",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 }
 
 // ============================
-// 🕒 Verify Token and Download PDF
+// 🕒 Verify Token and Download File
 // ============================
-async function verifyAndDownloadPDF(req, res) {
+async function verifyAndDownloadFile(req, res) {
   try {
     const { token } = req.params;
     const tokenData = activeDownloadTokens.get(token);
@@ -652,21 +793,50 @@ async function verifyAndDownloadPDF(req, res) {
       return res.status(403).send("Download link expired");
     }
 
+    if (!req.user || req.user._id.toString() !== tokenData.userId) {
+      return res.status(403).send("Unauthorized access");
+    }
+
+    const limitCheck = await Download.checkDailyLimit(req.user._id);
+    if (limitCheck.limitReached) {
+      return res.status(429).send(`Daily download limit (${DAILY_DOWNLOAD_LIMIT}) reached. Try again tomorrow.`);
+    }
+
     const post = await Post.findById(tokenData.postId);
-    if (!post || !post.pdf) {
-      return res.status(404).send("PDF not found");
+    if (!post) {
+      return res.status(404).send("Post not found");
     }
 
-    // Validate file path and existence
-    const filePath = validateFilePath(post.pdf);
-    if (!filePath || !fileExists(filePath)) {
-      return res.status(404).send("PDF file not found on server");
+    const filePath = tokenData.fileType === 'zip' ? post.zip : post.pdf;
+    if (!filePath) {
+      return res.status(404).send("File not found");
     }
 
-    // Optional: Delete token after use (one-time download)
-    // activeDownloadTokens.delete(token);
+    const validatedPath = validateFilePath(filePath);
+    if (!validatedPath || !fileExists(validatedPath)) {
+      return res.status(404).send("File not found on server");
+    }
 
-    res.download(filePath, path.basename(filePath), (err) => {
+    // Record download in database
+    try {
+      const download = new Download({
+        userId: req.user._id,
+        postId: tokenData.postId,
+        fileType: tokenData.fileType,
+        fileName: path.basename(validatedPath),
+        ipAddress: getClientIp(req),
+        userAgent: req.headers['user-agent'],
+      });
+      await download.save();
+      console.log(`✅ Download recorded: ${req.user.email} downloaded ${tokenData.fileType} from post ${tokenData.postId}`);
+    } catch (dbError) {
+      console.error("Error recording download:", dbError);
+    }
+
+    // Delete token after successful use
+    activeDownloadTokens.delete(token);
+
+    res.download(validatedPath, path.basename(validatedPath), (err) => {
       if (err) {
         console.error("Error downloading:", err);
         if (!res.headersSent) {
@@ -679,6 +849,83 @@ async function verifyAndDownloadPDF(req, res) {
     if (!res.headersSent) {
       return res.status(500).send("Internal Server Error");
     }
+  }
+}
+
+// ============================
+// 📊 NEW: Get User Download History (Admin)
+// ============================
+async function getUserDownloadHistory(req, res) {
+  try {
+    const { userId } = req.params;
+    const limit = parseInt(req.query.limit) || 50;
+
+    const history = await Download.getUserHistory(userId, limit);
+
+    res.status(200).json({
+      success: true,
+      count: history.length,
+      downloads: history,
+    });
+  } catch (error) {
+    console.error("Error fetching download history:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching download history",
+    });
+  }
+}
+
+// ============================
+// 📊 NEW: Get Post Download Stats (Admin)
+// ============================
+async function getPostDownloadStats(req, res) {
+  try {
+    const { id } = req.params;
+    
+    const stats = await Download.getPostStats(id);
+    const totalDownloads = await Download.countDocuments({ postId: id });
+
+    res.status(200).json({
+      success: true,
+      postId: id,
+      totalDownloads,
+      breakdown: stats,
+    });
+  } catch (error) {
+    console.error("Error fetching post stats:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching download statistics",
+    });
+  }
+}
+
+// ============================
+// 📊 NEW: Check User Daily Limit (API)
+// ============================
+async function checkUserLimit(req, res) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const limitCheck = await Download.checkDailyLimit(req.user._id);
+
+    res.status(200).json({
+      success: true,
+      ...limitCheck,
+      limit: DAILY_DOWNLOAD_LIMIT,
+    });
+  } catch (error) {
+    console.error("Error checking limit:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error checking download limit",
+    });
   }
 }
 
@@ -696,7 +943,11 @@ module.exports = {
   getCreatePostPage,
   getPublishedPosts,
   getPostBySlug,
-  downloadPDF,
-  generatePDFDownloadLink,
-  verifyAndDownloadPDF,
+  downloadFile,
+  getDownloadPage,
+  generateFileDownloadLink,
+  verifyAndDownloadFile,
+  getUserDownloadHistory,
+  getPostDownloadStats,
+  checkUserLimit,
 };
