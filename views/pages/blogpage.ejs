@@ -72,7 +72,7 @@
           
           <% if (zipUrl) { %>
             <a 
-              href="/download/<%= post._id %>/zip"
+              href="/api/download/<%= post._id %>/zip"
               class="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-md transition flex items-center gap-2 min-w-[200px] justify-center">
               📦 Download ZIP
             </a>
@@ -104,8 +104,8 @@
 
   <!-- Back to Blogs -->
   <div class="max-w-5xl w-full text-center">
-    <a href="/blog" class="text-cyan-400 hover:text-cyan-300 transition font-medium">
-      ← Back to all blogs
+    <a href="/" class="text-cyan-400 hover:text-cyan-300 transition font-medium">
+      ← Back to home
     </a>
   </div>
 

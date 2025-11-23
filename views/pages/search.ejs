@@ -1,0 +1,48 @@
+<div class="max-w-7xl mx-auto">
+
+    <h1 class="text-3xl font-bold text-cyan-400 mb-8">
+      Search results for: "<%= query %>"
+    </h1>
+  
+    <% if (posts.length > 0) { %>
+      <div class="flex flex-col gap-8">
+  
+        <% posts.forEach(post => { %>
+  
+          <div class="w-full bg-[#0F1B33] border border-slate-800 rounded-2xl p-6 md:p-8 
+                      flex flex-col md:flex-row md:items-center gap-8 shadow-lg">
+  
+            <div class="flex-1 space-y-4">
+              
+              <div class="text-slate-400 text-sm">
+                <a href="/category/<%= post.category?.slug %>" 
+                  class="px-3 py-1 bg-slate-800 text-cyan-300 rounded-full text-xs">
+                  <%= post.category?.name || "Uncategorized" %>
+                </a>
+              </div>
+  
+              <h2 class="text-2xl font-semibold text-cyan-400"><%= post.title %></h2>
+  
+              <p class="text-gray-300">
+                <%= post.content.replace(/<[^>]*>/g, '').substring(0, 200) %>...
+              </p>
+  
+              <a href="/api/blog/<%= post.slug %>" class="text-cyan-400">Read more →</a>
+            </div>
+  
+            <img src="<%= post.blogImage || '/assets/fallback.jpeg' %>"
+                 class="w-[320px] h-[220px] object-cover rounded-lg shadow-md">
+  
+          </div>
+  
+        <% }) %>
+  
+      </div>
+    <% } else { %>
+  
+      <p class="text-gray-400 text-xl">No matches found.</p>
+  
+    <% } %>
+  
+  </div>
+  

@@ -70,7 +70,7 @@ async function registerUser(req, res) {
       `,
     });
 
-    console.log(`✅ OTP sent to ${email}`);
+    // console.log(`✅ OTP sent to ${email}`);
 
     return res.redirect(`/verify?email=${encodeURIComponent(email)}`);
   } catch (error) {
@@ -147,7 +147,7 @@ async function verifyOtp(req, res) {
 
     delete pendingUsers[email];
 
-    console.log(`✅ User verified: ${email}`);
+    // console.log(`✅ User verified: ${email}`);
 
     // Optional: Send confirmation email
     await resend.emails.send({
@@ -237,7 +237,7 @@ async function loginUser(req, res) {
       secure: process.env.NODE_ENV === "production",
     });
 
-    console.log(`✅ Logged in: ${user.email}`);
+    // console.log(`✅ Logged in: ${user.email}`);
     return res.redirect("/");
   } catch (error) {
     console.error("❌ Login error:", error.message);
@@ -314,7 +314,7 @@ async function requestPasswordReset(req, res) {
       `,
     });
 
-    console.log(`✅ Password reset OTP sent to ${email}`);
+    // console.log(`✅ Password reset OTP sent to ${email}`);
 
     return res.redirect(`/reset-password?email=${encodeURIComponent(email)}`);
   } catch (error) {
@@ -416,7 +416,7 @@ async function resetPassword(req, res) {
 
     delete passwordResetOTPs[email];
 
-    console.log(`✅ Password reset successful for ${email}`);
+    // console.log(`✅ Password reset successful for ${email}`);
 
     // Send confirmation email
     await resend.emails.send({

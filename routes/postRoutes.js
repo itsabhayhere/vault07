@@ -1,21 +1,21 @@
 const express = require("express");
 const router = express.Router();
 const postController = require("../controllers/postController");
-
-// ============================
-// 🔐 Middleware (uncomment when ready)
-// ============================
-// const { isAuthenticated, isAdmin } = require("../middleware/auth");
+const adminMiddleware = require("../middleware/adminMiddleware");
 
 // ============================
 // 🔐 Admin Routes
 // ============================
 
-router.get("/admin/posts/create", /* isAdmin, */ postController.getCreatePostPage);
+router.get(
+  "/admin/posts/create",
+  adminMiddleware,
+  postController.getCreatePostPage
+);
 
 router.post(
   "/admin/posts",
-  /* isAdmin, */
+  adminMiddleware,
   postController.upload.fields([
     { name: "pdf", maxCount: 1 },
     { name: "zip", maxCount: 1 },
@@ -24,12 +24,21 @@ router.post(
   postController.createPost
 );
 
-router.get("/admin/posts", /* isAdmin, */ postController.getAllPosts);
-router.get("/admin/posts/:id", /* isAdmin, */ postController.getPostById);
+router.get(
+  "/admin/posts",
+  adminMiddleware,
+  postController.getAllPosts
+);
+
+router.get(
+  "/admin/posts/:id",
+  adminMiddleware,
+  postController.getPostById
+);
 
 router.put(
   "/admin/posts/:id",
-  /* isAdmin, */
+  adminMiddleware,
   postController.upload.fields([
     { name: "pdf", maxCount: 1 },
     { name: "zip", maxCount: 1 },
@@ -38,45 +47,52 @@ router.put(
   postController.updatePost
 );
 
-router.delete("/admin/posts/:id", /* isAdmin, */ postController.deletePost);
-router.get("/admin/posts/:id/stats", /* isAdmin, */ postController.getPostDownloadStats);
-router.get("/admin/downloads/user/:userId", /* isAdmin, */ postController.getUserDownloadHistory);
-router.get("/admin/download/:id/:type", /* isAdmin, */ postController.downloadFile);
+router.delete(
+  "/admin/posts/:id",
+  adminMiddleware,
+  postController.deletePost
+);
+
+router.get(
+  "/admin/posts/:id/stats",
+  adminMiddleware,
+  postController.getPostDownloadStats
+);
+
+router.get(
+  "/admin/downloads/user/:userId",
+  adminMiddleware,
+  postController.getUserDownloadHistory
+);
+
+router.get(
+  "/admin/download/:id/:type",
+  adminMiddleware,
+  postController.downloadFile
+);
 
 // ============================
-// 📊 API Routes
+// 📊 API Routes (Public/Authenticated)
 // ============================
-// These routes are mounted under /api in app.js
-// So /generate-link becomes /api/generate-link
 
-// Generate download link - called by frontend as /api/generate-link/:id/:type
-router.get("/generate-link/:id/:type", /* isAuthenticated, */ postController.generateFileDownloadLink);
-
-// Check user limit - /api/check-limit
-router.get("/check-limit", /* isAuthenticated, */ postController.checkUserLimit);
-
-// Get posts by status - /api/posts/status/:status
+router.get("/generate-link/:id/:type", postController.generateFileDownloadLink);
+router.get("/check-limit", postController.checkUserLimit);
 router.get("/posts/status/:status", postController.getPostsByStatus);
-
-// Single blog post API - /api/blog/:slug
 router.get("/blog/:slug", postController.getPostBySlug);
 
 // ============================
 // 🔗 Download Routes
 // ============================
-// These are also under /api prefix
 
-// Download via temporary token - /api/download-temp/:token
-router.get("/download-temp/:token", /* isAuthenticated, */ postController.verifyAndDownloadFile);
-
-// Download page - /api/download/:id/:type
-router.get("/download/:id/:type", /* isAuthenticated, */ postController.getDownloadPage);
+router.get("/download-temp/:token", postController.verifyAndDownloadFile);
+router.get("/download/:id/:type", postController.getDownloadPage);
 
 // ============================
-// 🌐 Public Routes - MUST COME LAST!
+// 🌐 Public Routes
 // ============================
 
-// Get all published blogs - /api/blog
 router.get("/blog", postController.getPublishedPosts);
+
+router.get("/category/:slug", postController.getPostsByCategory);
 
 module.exports = router;

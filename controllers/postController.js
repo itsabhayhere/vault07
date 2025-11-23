@@ -5,7 +5,7 @@ const slugify = require("slugify");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-
+const Postcategory = require('../models/PostCategory')
 // ============================
 // 📁 Constants
 // ============================
@@ -142,12 +142,15 @@ function getCreatePostPage(req, res) {
 // ============================
 async function createPost(req, res) {
   try {
-    const { title, content, status } = req.body;
+    const { title, content, status, category } = req.body;
 
-    if (!title || !content) {
+    console.log("Received category:", category);
+
+    // Validate required fields
+    if (!title || !content || !category) {
       return res.status(400).json({
         success: false,
-        message: "Title and content are required",
+        message: "Title, content, and category are required",
       });
     }
 
@@ -169,22 +172,25 @@ async function createPost(req, res) {
 
     const slug = slugify(sanitizedTitle, { lower: true, strict: true });
 
+    // File Paths
     const pdfPath = req.files?.pdf
       ? `/uploads/pdfs/${req.files.pdf[0].filename}`
       : null;
-    
+
     const zipPath = req.files?.zip
       ? `/uploads/zips/${req.files.zip[0].filename}`
       : null;
-    
+
     const imagePath = req.files?.image
       ? `/uploads/images/${req.files.image[0].filename}`
       : null;
 
+    // Create Post with category included
     const newPost = new Post({
       title: sanitizedTitle,
       slug,
       content,
+      category,        // <-- IMPORTANT FIX
       pdf: pdfPath,
       zip: zipPath,
       blogImage: imagePath,
@@ -198,6 +204,7 @@ async function createPost(req, res) {
       message: "Blog created successfully!",
       post: newPost,
     });
+
   } catch (error) {
     console.error("❌ Error creating post:", error);
 
@@ -215,12 +222,13 @@ async function createPost(req, res) {
   }
 }
 
+
 // ============================
 // 📋 READ ALL POSTS (Admin)
 // ============================
 async function getAllPosts(req, res) {
   try {
-    const posts = await Post.find({}).sort({ createdAt: -1 });
+    const posts = await Post.find({}).populate("category").sort({ createdAt: -1 });
     res.render("admin/post", {
       posts,
       title: "All Blog Posts",
@@ -241,7 +249,7 @@ async function getAllPosts(req, res) {
 // ============================
 async function getPostById(req, res) {
   try {
-    const post = await Post.findById(req.params.id);
+    const post = await Post.findById(req.params.id).populate("category");
     if (!post) {
       return res.status(404).json({
         success: false,
@@ -407,7 +415,7 @@ async function getPostsByStatus(req, res) {
       });
     }
 
-    const posts = await Post.find({ status }).sort({ createdAt: -1 });
+    const posts = await Post.find({ status }).populate("category").sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -428,7 +436,7 @@ async function getPostsByStatus(req, res) {
 // ============================
 async function getPublishedPosts(req, res) {
   try {
-    const posts = await Post.find({ status: "published" }).sort({
+    const posts = await Post.find({ status: "published" }).populate("category").sort({
       createdAt: -1,
     });
 
@@ -452,7 +460,7 @@ async function getPublishedPosts(req, res) {
 // ============================
 async function getPostBySlug(req, res) {
   try {
-    const post = await Post.findOne({ slug: req.params.slug });
+    const post = await Post.findOne({ slug: req.params.slug }).populate("category");
 
     if (!post) {
       return res.status(404).render("pages/404", {
@@ -488,7 +496,6 @@ async function getPostBySlug(req, res) {
         : `/uploads/zips/${post.zip}`
       : null;
 
-    // Check daily download limit if user is logged in
     let downloadStatus = { count: 0, remaining: 5, limitReached: false };
     if (req.user) {
       try {
@@ -535,7 +542,6 @@ async function downloadFile(req, res) {
       return res.status(404).send(`${fileType.toUpperCase()} not found`);
     }
 
-    // Validate file path to prevent directory traversal
     const validatedPath = validateFilePath(filePath);
 
     if (!validatedPath || !fileExists(validatedPath)) {
@@ -929,6 +935,43 @@ async function checkUserLimit(req, res) {
   }
 }
 
+async function getPostsByCategory(req, res) {
+  try {
+    const { slug } = req.params;
+
+    // Find category
+    const category = await Postcategory.findOne({ slug });
+    if (!category) {
+      return res.status(404).render("pages/404", {
+        title: "Category Not Found",
+        user: req.user,
+        layout: "layouts/main"
+      });
+    }
+
+    // Find posts in this category
+    const posts = await Post.find({ 
+      category: category._id, 
+      status: "published" 
+    })
+    .sort({ createdAt: -1 });
+
+    res.render("pages/category-posts", {
+      title: category.name,
+      category,
+      posts,
+      user: req.user,
+      layout: "layouts/main"
+    });
+
+  } catch (error) {
+    console.error("Error loading category:", error);
+    res.status(500).render("error", {
+      message: "Error loading category",
+      user: req.user
+    });
+  }
+}
 // ============================
 // 🧩 Export Controller
 // ============================
@@ -950,4 +993,6 @@ module.exports = {
   getUserDownloadHistory,
   getPostDownloadStats,
   checkUserLimit,
+  getPostsByCategory,
+
 };

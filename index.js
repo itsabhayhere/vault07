@@ -13,6 +13,7 @@ const cookieParser = require("cookie-parser");
 const Post = require('./models/Post');
 const Marquee = require("./models/Marquee");
 const Setting = require("./models/Setting");
+const PostCategory = require("./models/PostCategory")
 
 // ===== Middleware Setup =====
 app.use(cookieParser());
@@ -46,6 +47,8 @@ app.use(async (req, res, next) => {
   try {
     const recentPost = await Post.find({}).sort({ createdAt: -1 }).limit(10);
     const marquees = await Marquee.find({});
+    const PostCategory = await Postcategory.find({});
+
     let settings = await Setting.findOne();
 
     // If no settings exist, create default
@@ -64,6 +67,8 @@ app.use(async (req, res, next) => {
     res.locals.recentPost = recentPost;
     res.locals.marquees = marquees;
     res.locals.settings = settings;
+    res.locals.PostCategory = PostCategory;
+
     res.locals.title = settings.siteName || "Vault01";
 
     next();
@@ -72,6 +77,7 @@ app.use(async (req, res, next) => {
 
     res.locals.recentPost = [];
     res.locals.marquees = [];
+    res.locals.PostCategory = [];
     res.locals.settings = {
       siteName: "Vault01",
       contactEmail: "",
@@ -101,12 +107,17 @@ const productRouter = require("./routes/productRoute");
 const marqueeRouter = require("./routes/marqueeRoute");
 const settingsRouter = require("./routes/settingsRoutes");
 const fileUploadRouter = require("./routes/fileUploadRoute");
+const postCategoryRoutes = require("./routes/postCategoryRoutes");
+const Postcategory = require("./models/PostCategory");
+const searchRouter = require("./routes/searchRoute");
+
 
 // Public routes
 app.use("/", indexRouter);
 app.use("/about", aboutRouter);
 app.use("/courses", coursesRouter);
 app.use("/api", postRoutes);
+app.use("/", searchRouter);
 
 // Protected admin routes
 app.use("/admin/category", adminMiddleware, categoryRouter);
@@ -115,6 +126,7 @@ app.use("/admin/marquee", adminMiddleware, marqueeRouter);
 app.use("/admin/settings", adminMiddleware, settingsRouter);
 app.use("/admin/files", adminMiddleware, fileUploadRouter); // ✅ Only define once
 app.use("/admin", adminMiddleware, adminRouter);
+app.use("/api", postCategoryRoutes);
 
 // ===== Static Pages =====
 app.get("/contact", (req, res) => {

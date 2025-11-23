@@ -1,62 +1,124 @@
 <header>
     <div class="header-container">
-        <a href="/" class="logo"><%= settings.siteName %></a>
-
-        <!-- Hamburger Icon (visible on mobile) -->
-        <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
-            <i class="fas fa-bars"></i>
-        </button>
-        
-        <!-- Navigation Links (Collapsible part for mobile) -->
-        <nav class="nav-links" id="mobile-nav">
-            <div class="dropdown">
-                <button class="dropdown-btn" onclick="toggleCategoriesDropdown()">
-                    CATEGORIES <i class="fas fa-chevron-down"></i>
-                </button>
-                <div class="dropdown-content" id="categoriesDropdown">
-                    <a href="#web">Web Development</a>
-                    <a href="#mobile">Mobile Development</a>
-                    <a href="#data">Data Science</a>
-                    <a href="#design">UI/UX Design</a>
-                    <a href="#business">Business</a>
-                    <a href="#marketing">Marketing</a>
-                </div>
+      <a href="/" class="logo"><%= settings.siteName %></a>
+  
+      <!-- Mobile Menu -->
+      <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+        <i class="fas fa-bars"></i>
+      </button>
+  
+      <!-- Navigation -->
+      <nav class="nav-links" id="mobile-nav">
+  
+        <!-- Dynamic Category Dropdown -->
+<!-- Dynamic Category Mega Menu -->
+<div class="dropdown relative">
+    <button class="dropdown-btn flex items-center gap-2"
+            onclick="toggleCategoriesDropdown()">
+      CATEGORIES
+      <i class="fas fa-chevron-down"></i>
+    </button>
+  
+    <div id="categoriesDropdown"
+         class="dropdown-content absolute left-0 mt-2 
+                bg-[#0F1B33] border border-slate-700 shadow-2xl rounded-xl
+                w-[60rem] p-6 z-50 hidden">
+  
+      <% if (PostCategory && PostCategory.length > 0) { %>
+  
+        <% 
+          const chunkSize = 4; // 4 per column
+          const categoryChunks = [];
+  
+          for (let i = 0; i < PostCategory.length; i += chunkSize) {
+            categoryChunks.push(PostCategory.slice(i, i + chunkSize));
+          }
+        %>
+  
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
+  
+          <% categoryChunks.forEach((chunk, index) => { %>
+            <div>
+              <h3 class="text-gray-300 font-semibold mb-3 border-b border-slate-700 pb-1">
+                Category Group <%= index + 1 %>
+              </h3>
+  
+              <ul class="space-y-2">
+                <% chunk.forEach(cat => { %>
+                  <li>
+                    <a href="/api/category/<%= cat.slug %>"
+                       class="block text-gray-300 hover:text-white 
+                              hover:bg-slate-700/40 px-3 py-2 rounded-lg 
+                              transition-all duration-200 text-base">
+                      <%= cat.name %>
+                    </a>
+                  </li>
+                <% }) %>
+              </ul>
             </div>
-            <a href="/about" class="nav-link">ABOUT</a>
-            <a href="/courses" class="nav-link">EXAM TIPS</a>
-            <a href="/contact" class="nav-link">CONTACT US</a>
-        </nav>
-        
-        <!-- Header Actions (Visible on all screens) -->
-        <div class="header-actions">
-            <div class="search-bar">
-                <input type="text" placeholder="Search courses...">
-                <i class="fas fa-search search-icon"></i> 
-            </div>
-            
-            <div class="profile-dropdown">
-                <div class="user-profile" onclick="toggleProfileDropdown()">
-                    <img src="https://i.pinimg.com/736x/03/eb/d6/03ebd625cc0b9d636256ecc44c0ea324.jpg" alt="User Profile" class="user-icon">
-                </div>
-                <div class="profile-dropdown-content" id="profileMenu">
-                    <div class="profile-header-info">
-                        <% if (user) { %>
-                            <strong><%= user.name %></strong>
-                            <span><%= user.email %></span>
-                        <% } else { %>
-                            <strong>Guest</strong>
-                            <span>Not logged in</span>
-                        <% } %>
-                    </div>
-                    <hr>
-                    <% if (user) { %>
-                        <a href="/logout" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
-                    <% } else { %>
-                        <a href="/login" class="logout"><i class="fas fa-sign-in-alt"></i> Login</a>
-                    <% } %>
-                </div>
-            </div>
-            
+          <% }) %>
+  
         </div>
+  
+      <% } else { %>
+        <p class="text-gray-400">No categories found</p>
+      <% } %>
+  
     </div>
-</header>
+  </div>
+  
+  
+      </nav>
+  
+      <!--  Search -->
+      <div class="header-actions">
+        <div class="search-bar">
+            <form action="/search" method="GET" class="flex items-center gap-2">
+              <input 
+                type="text" 
+                name="q" 
+                placeholder="Search posts or categories..." 
+                class="border-none bg-transparent text-white outline-none"
+                required
+              >
+              <button type="submit">
+                <i class="fas fa-search search-icon"></i>
+              </button>
+            </form>
+          </div>
+          
+          
+  
+        <div class="profile-dropdown">
+          <div class="user-profile" onclick="toggleProfileDropdown()">
+            <img src="https://i.pinimg.com/736x/03/eb/d6/03ebd625cc0b9d636256ecc44c0ea324.jpg" class="user-icon">
+          </div>
+  
+          <div class="profile-dropdown-content" id="profileMenu">
+            <div class="profile-header-info">
+              <% if (user) { %>
+                <strong><%= user.name %></strong>
+                <span><%= user.email %></span>
+              <% } else { %>
+                <strong>Guest</strong>
+                <span>Not logged in</span>
+              <% } %>
+            </div>
+            <hr>
+  
+            <% if (user) { %>
+              <a href="/logout" class="logout">
+                <i class="fas fa-sign-out-alt"></i> Logout
+              </a>
+            <% } else { %>
+              <a href="/login" class="logout">
+                <i class="fas fa-sign-in-alt"></i> Login
+              </a>
+            <% } %>
+          </div>
+        </div>
+      </div>
+  
+    </div>
+  </header>
+  

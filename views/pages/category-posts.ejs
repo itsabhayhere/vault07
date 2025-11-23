@@ -1,0 +1,71 @@
+<div class="max-w-7xl mx-auto">
+
+    <!-- Category Title -->
+    <h1 class="text-3xl font-bold text-cyan-400 mb-8">
+      <%= category.name %>
+    </h1>
+  
+    <% if (posts.length > 0) { %>
+  
+      <div class="flex flex-col gap-8">
+  
+        <% posts.forEach(post => { %>
+  
+          <!-- Blog Row Card -->
+          <div class="w-full bg-[#0F1B33] border border-slate-800 rounded-2xl p-6 md:p-8 
+                      flex flex-col md:flex-row md:items-center gap-8 shadow-lg 
+                      hover:shadow-slate-500/20 transition-all duration-300">
+  
+            <!-- Left: Text -->
+            <div class="flex-1 space-y-4">
+  
+              <!-- Category -->
+              <div class="text-slate-400 text-sm flex items-center gap-2">
+                <span class="px-3 py-1 bg-slate-800 text-cyan-300 rounded-full text-xs">
+                  <%= category.name %>
+                </span>
+              </div>
+  
+              <!-- Title -->
+              <h2 class="text-2xl md:text-3xl font-semibold text-cyan-400">
+                <%= post.title %>
+              </h2>
+  
+              <!-- Excerpt -->
+              <p class="text-gray-300 leading-relaxed">
+                <%= post.content.replace(/<[^>]*>?/gm, '').substring(0, 250) %>...
+              </p>
+  
+              <!-- Read More Button -->
+              <a href="/api/blog/<%= post.slug %>">
+                <button class="mt-4 px-6 py-2 bg-cyan-600 text-white text-sm font-medium 
+                               rounded-md hover:bg-cyan-500 transition">
+                  Read more →
+                </button>
+              </a>
+  
+            </div>
+  
+            <!-- Right: Image -->
+            <div class="flex-shrink-0 mx-auto md:mx-0">
+              <img 
+                src="<%= post.blogImage || 'https://i.pinimg.com/1200x/a3/c2/f1/a3c2f117b8c0d6a6dbb3c232fdea6ec2.jpg' %>"
+                alt="<%= post.title %>"
+                class="w-[300px] h-[200px] md:w-[380px] md:h-[340px] 
+                       object-cover rounded-lg shadow-md"
+              />
+            </div>
+  
+          </div>
+  
+        <% }) %>
+  
+      </div>
+  
+    <% } else { %>
+  
+      <p class="text-gray-400 text-lg mt-10">No posts found in this category.</p>
+  
+    <% } %>
+  
+</div>

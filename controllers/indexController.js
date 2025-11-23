@@ -2,8 +2,10 @@ const Post = require('../models/Post');
 
 async function getHomePage(req, res) {
   try {
-    const posts = await Post.find({}).sort({ createdAt: -1 });
-    res.render('pages/index', {
+    const posts = await Post.find({})
+    .populate("category")
+    .sort({ createdAt: -1 });
+      res.render('pages/index', {
       title: 'Home',
       posts,
       user: req.user,
